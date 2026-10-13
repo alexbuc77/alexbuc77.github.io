@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Captura RR</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#141816">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
 <style>
   /* Una columna de herramienta: estado de conexión, toma en vivo, resultado, historial. Paleta del Registro matinal HRV. */
@@ -60,7 +64,7 @@
 </head>
 <body>
 <div class="pnl">
-  <div class="top"><b>Captura RR</b><span>v0.1 · prueba en paralelo</span></div>
+  <div class="top"><b>Captura RR</b><span>v0.2 · prueba en paralelo</span></div>
 
   <div id="estado" class="estado">Prendé la banda (mojá los electrodos) y tocá Conectar.</div>
 
@@ -72,6 +76,7 @@
       <label for="dur" class="nota" style="margin:0">Duración</label>
       <select id="dur">
         <option value="120">2 min</option>
+        <option value="150">2 min 30 s</option>
         <option value="180" selected>3 min</option>
         <option value="300">5 min</option>
       </select>
@@ -111,6 +116,8 @@
   <section>
     <h2>Tomas guardadas en este teléfono</h2>
     <div id="hist" class="tabla"></div>
+    <div class="fila" style="margin-top:10px"><button id="bHist" class="sec">Copiar todas las tomas</button></div>
+    <div class="linea" id="hLineas" hidden></div>
     <p class="nota">Score = ln(rMSSD) ÷ 6,5 × 100. Corrección: un latido se descarta si sale de 300–2000 ms o se aleja más de 20 % de la mediana de sus 10 vecinos. Más de 5 % descartados o FC máx &gt; 200: la toma no sirve y se repite.</p>
   </section>
 </div>
@@ -281,6 +288,15 @@
     catch (_) { const r = document.createRange(); r.selectNodeContents($('rLinea')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); estado('Seleccioné la línea: copiala a mano.'); }
   }
 
+  async function copiarHist() {
+    const h = leer();
+    if (!h.length) { estado('Todavía no hay tomas para copiar.'); return; }
+    const txt = h.slice().reverse().map(t => linea(t) + (t.valida ? '' : ' (repetir)')).join('\n');
+    const box = $('hLineas'); box.hidden = false; box.style.whiteSpace = 'pre'; box.textContent = txt;
+    try { await navigator.clipboard.writeText(txt); estado(h.length + ' tomas copiadas. Pegalas en el chat.', 'ok'); }
+    catch (_) { const r = document.createRange(); r.selectNodeContents(box); const s = getSelection(); s.removeAllRanges(); s.addRange(r); estado('Seleccioné las tomas: copialas a mano.'); }
+  }
+
   function bajarRR() {
     if (!ultima) return;
     const csv = 'indice,rr_ms\n' + ultima.rr.map((v, i) => i + ',' + v).join('\n');
@@ -314,6 +330,8 @@
   $('bCan').onclick = cancelar;
   $('bCopia').onclick = copiar;
   $('bRr').onclick = bajarRR;
+  $('bHist').onclick = copiarHist;
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   addEventListener('resize', dibujar);
   historial();
 })();
