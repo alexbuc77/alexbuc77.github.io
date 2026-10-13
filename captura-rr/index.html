@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Captura RR</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap">
+<style>
+  /* Una columna de herramienta: estado de conexión, toma en vivo, resultado, historial. Paleta del Registro matinal HRV. */
+  :root {
+    --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
+    --hrv: #23458f; --ok: #2f6b46; --warn: #9a6a12; --bad: #9a3b32;
+    --okbg: #e3eee6; --warnbg: #f3ead6; --badbg: #f6e6e3;
+    --display: 'Fraunces', Georgia, serif; --body: 'Inter', system-ui, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #141816; --card: #1c211f; --ink: #e4e8e3; --mute: #99a29a; --line: #343b37; --field: #111513;
+      --hrv: #8aa6e8; --ok: #7fc497; --warn: #e0b45e; --bad: #e08a7f;
+      --okbg: #1f2f25; --warnbg: #332a17; --badbg: #36201d; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 14px/1.5 var(--body); -webkit-font-smoothing: antialiased; }
+  .pnl { max-width: 560px; margin: 0 auto; padding-inline: 16px; padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(32px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 18px; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; font-size: 12px; color: var(--mute); }
+  .top b { font-family: var(--display); font-size: 19px; font-weight: 600; color: var(--ink); }
+  h2 { font-family: var(--display); font-weight: 600; font-size: 16px; margin: 0 0 8px; text-wrap: balance; }
+  section { background: var(--card); border: 1px solid var(--line); padding: 14px; min-width: 0; }
+  .estado { font-size: 13px; padding: 10px 12px; border: 1px solid var(--line); background: var(--card); }
+  .estado.mal { background: var(--badbg); border-color: var(--bad); color: var(--bad); }
+  .estado.ok { background: var(--okbg); border-color: var(--ok); color: var(--ok); }
+  .fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  button, select { font: inherit; font-size: 14px; padding: 10px 14px; border: 1px solid var(--ink); background: var(--ink); color: var(--card); cursor: pointer; border-radius: 0; }
+  button.sec { background: transparent; color: var(--ink); }
+  button:disabled { opacity: .45; cursor: default; }
+  select { background: var(--field); color: var(--ink); border-color: var(--line); }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--hrv); outline-offset: 2px; }
+  .vivo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .cifra { font-family: var(--display); font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .pie { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+  canvas { display: block; width: 100%; height: 120px; margin-top: 12px; background: var(--field); border: 1px solid var(--line); }
+  .res { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 10px; }
+  .res div { min-width: 0; }
+  .res b { display: block; font-family: var(--display); font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .res span { font-size: 11px; color: var(--mute); }
+  .veredicto { margin-top: 12px; padding: 10px 12px; font-size: 13px; border-left: 5px solid var(--line); background: var(--field); }
+  .veredicto.ok { border-left-color: var(--ok); } .veredicto.mal { border-left-color: var(--bad); }
+  .linea { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: var(--field); border: 1px solid var(--line); padding: 8px; overflow-x: auto; white-space: nowrap; margin-top: 10px; }
+  .tabla { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th { font-weight: 500; font-size: 11px; color: var(--mute); text-align: right; padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  .nota { font-size: 12px; color: var(--mute); margin: 8px 0 0; }
+  .vacio { font-size: 13px; color: var(--mute); }
+  @media (max-width: 380px) { .cifra { font-size: 30px; } .res b { font-size: 20px; } }
+</style>
+</head>
+<body>
+<div class="pnl">
+  <div class="top"><b>Captura RR</b><span>v0.1 · prueba en paralelo</span></div>
+
+  <div id="estado" class="estado">Prendé la banda (mojá los electrodos) y tocá Conectar.</div>
+
+  <section>
+    <h2>Banda</h2>
+    <div class="fila">
+      <button id="bCon">Conectar banda</button>
+      <button id="bDes" class="sec" disabled>Desconectar</button>
+      <label for="dur" class="nota" style="margin:0">Duración</label>
+      <select id="dur">
+        <option value="120">2 min</option>
+        <option value="180" selected>3 min</option>
+        <option value="300">5 min</option>
+      </select>
+    </div>
+    <div class="vivo">
+      <div><div class="cifra" id="vHr">—</div><div class="pie">FC (lpm)</div></div>
+      <div><div class="cifra" id="vRr">—</div><div class="pie">Último RR (ms)</div></div>
+      <div><div class="cifra" id="vT">—</div><div class="pie">Restante</div></div>
+    </div>
+    <canvas id="cv" aria-label="Tacograma: intervalos RR en vivo"></canvas>
+    <div class="fila" style="margin-top:12px">
+      <button id="bIni" disabled>Empezar toma</button>
+      <button id="bCan" class="sec" disabled>Cancelar</button>
+    </div>
+    <p class="nota">Protocolo: levantarte, orinar, pesarte, 3 min sentado, recién ahí Empezar. Quieto y respirando normal durante la toma.</p>
+  </section>
+
+  <section id="sRes" hidden>
+    <h2>Resultado de la toma</h2>
+    <div class="res">
+      <div><b id="rScore">—</b><span>Score (misma fórmula del registro)</span></div>
+      <div><b id="rRmssd">—</b><span>rMSSD (ms)</span></div>
+      <div><b id="rLn">—</b><span>ln rMSSD</span></div>
+      <div><b id="rHr">—</b><span>FC mín / media / máx</span></div>
+      <div><b id="rSdnn">—</b><span>SDNN (ms)</span></div>
+      <div><b id="rArt">—</b><span>Latidos corregidos</span></div>
+    </div>
+    <div id="rVer" class="veredicto"></div>
+    <div class="linea" id="rLinea"></div>
+    <div class="fila" style="margin-top:10px">
+      <button id="bCopia" class="sec">Copiar línea</button>
+      <button id="bRr" class="sec">Bajar intervalos RR (.csv)</button>
+    </div>
+    <p class="nota">La línea usa el formato del registro (fecha_hora,hrv,peso,hr_min,hr_prom,hr_max,nota). Peso queda vacío. Esta herramienta no escribe en el Registro matinal HRV.</p>
+  </section>
+
+  <section>
+    <h2>Tomas guardadas en este teléfono</h2>
+    <div id="hist" class="tabla"></div>
+    <p class="nota">Score = ln(rMSSD) ÷ 6,5 × 100. Corrección: un latido se descarta si sale de 300–2000 ms o se aleja más de 20 % de la mediana de sus 10 vecinos. Más de 5 % descartados o FC máx &gt; 200: la toma no sirve y se repite.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const KEY = 'capturaRR.v1';
+  let device = null, chr = null, wake = null;
+  let live = [];            // últimos RR para el gráfico
+  let rec = null;           // { t0, dur, rr: [] } mientras graba
+  let timer = null, ultima = null;
+
+  const estado = (txt, cls) => { const e = $('estado'); e.textContent = txt; e.className = 'estado' + (cls ? ' ' + cls : ''); };
+  const fmt = (n, d = 0) => n == null || !isFinite(n) ? '—' : n.toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  if (!('bluetooth' in navigator)) {
+    estado('Este navegador no tiene Web Bluetooth. Abrila con Chrome en Android o en la compu. En iPhone no funciona (Apple no lo habilita en Safari).', 'mal');
+    $('bCon').disabled = true;
+  }
+
+  // Heart Rate Measurement (0x2A37): flags, FC, energía opcional, RR en 1/1024 s
+  function parse(dv) {
+    const f = dv.getUint8(0); let i = 1;
+    const hr = (f & 1) ? dv.getUint16(i, true) : dv.getUint8(i); i += (f & 1) ? 2 : 1;
+    if (f & 8) i += 2;
+    const rr = [];
+    if (f & 16) for (; i + 1 < dv.byteLength; i += 2) rr.push(dv.getUint16(i, true) * 1000 / 1024);
+    return { hr, rr };
+  }
+
+  function onData(ev) {
+    const { hr, rr } = parse(ev.target.value);
+    $('vHr').textContent = hr || '—';
+    if (rr.length) {
+      $('vRr').textContent = Math.round(rr[rr.length - 1]);
+      live.push(...rr); if (live.length > 120) live = live.slice(-120);
+      if (rec) rec.rr.push(...rr.map(v => ({ t: Date.now(), v })));
+      dibujar();
+    }
+  }
+
+  async function conectar() {
+    try {
+      device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+      device.addEventListener('gattserverdisconnected', desconectada);
+      estado('Conectando con ' + (device.name || 'la banda') + '…');
+      const srv = await device.gatt.connect();
+      const svc = await srv.getPrimaryService('heart_rate');
+      chr = await svc.getCharacteristic('heart_rate_measurement');
+      chr.addEventListener('characteristicvaluechanged', onData);
+      await chr.startNotifications();
+      estado('Conectada: ' + (device.name || 'banda') + '. Esperá a que el gráfico se estabilice y tocá Empezar toma.', 'ok');
+      $('bCon').disabled = true; $('bDes').disabled = false; $('bIni').disabled = false;
+    } catch (e) {
+      if (e && e.name === 'NotFoundError') estado('No elegiste ninguna banda. Probá de nuevo con la banda puesta.');
+      else estado('No se pudo conectar: ' + (e && e.message ? e.message : e) + '. Si Elite HRV está conectada a la banda, cerrala y reintentá.', 'mal');
+    }
+  }
+
+  function desconectada() {
+    $('bCon').disabled = false; $('bDes').disabled = true; $('bIni').disabled = true;
+    if (rec) { parar(); estado('Se cortó la conexión en medio de la toma. Repetila.', 'mal'); }
+    else estado('Banda desconectada.');
+  }
+
+  async function empezar() {
+    rec = { t0: Date.now(), dur: +$('dur').value, rr: [] };
+    $('bIni').disabled = true; $('bCan').disabled = false; $('dur').disabled = true; $('sRes').hidden = true;
+    try { wake = await navigator.wakeLock?.request('screen'); } catch (_) { wake = null; }
+    estado('Grabando. Quieto y respirando normal.');
+    timer = setInterval(tic, 250); tic();
+  }
+
+  function tic() {
+    const rest = rec.dur - (Date.now() - rec.t0) / 1000;
+    const s = Math.max(0, Math.ceil(rest));
+    $('vT').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    if (rest <= 0) terminar();
+  }
+
+  function parar() {
+    clearInterval(timer); timer = null;
+    try { wake?.release(); } catch (_) {}
+    wake = null; $('bCan').disabled = true; $('dur').disabled = false;
+    $('bIni').disabled = !(device && device.gatt.connected);
+    $('vT').textContent = '—';
+  }
+
+  function cancelar() { rec = null; parar(); estado('Toma cancelada.'); }
+
+  function mediana(a) { const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+
+  function analizar(rrObj) {
+    const rr = rrObj.map(o => o.v);
+    const n = rr.length;
+    const ok = rr.map(v => v >= 300 && v <= 2000);
+    for (let i = 0; i < n; i++) {
+      if (!ok[i]) continue;
+      const vec = [];
+      for (let j = Math.max(0, i - 5); j <= Math.min(n - 1, i + 5); j++) if (j !== i && rr[j] >= 300 && rr[j] <= 2000) vec.push(rr[j]);
+      if (vec.length >= 4) { const m = mediana(vec); if (Math.abs(rr[i] - m) > 0.2 * m) ok[i] = false; }
+    }
+    const buenos = rr.filter((v, i) => ok[i]);
+    let sq = 0, pares = 0;
+    for (let i = 1; i < n; i++) if (ok[i] && ok[i - 1]) { const d = rr[i] - rr[i - 1]; sq += d * d; pares++; }
+    const rmssd = pares ? Math.sqrt(sq / pares) : null;
+    const media = buenos.length ? buenos.reduce((a, b) => a + b, 0) / buenos.length : null;
+    const sdnn = buenos.length > 1 ? Math.sqrt(buenos.reduce((a, b) => a + (b - media) ** 2, 0) / (buenos.length - 1)) : null;
+    const hrs = buenos.map(v => 60000 / v);
+    const art = n ? (n - buenos.length) / n * 100 : 100;
+    const hrMin = hrs.length ? Math.min(...hrs) : null, hrMax = hrs.length ? Math.max(...hrs) : null;
+    const hrProm = media ? 60000 / media : null;
+    const ln = rmssd ? Math.log(rmssd) : null;
+    const score = ln != null ? ln / 6.5 * 100 : null;
+    const fallas = [];
+    if (n < 60) fallas.push('pocos latidos registrados (' + n + ')');
+    if (art > 5) fallas.push('latidos descartados ' + fmt(art, 1) + ' % (tope 5 %)');
+    if (hrMax != null && hrMax > 200) fallas.push('FC máx ' + Math.round(hrMax) + ' (tope 200)');
+    return { n, buenos: buenos.length, art, rmssd, ln, score, sdnn, hrMin, hrProm, hrMax, valida: !fallas.length, fallas };
+  }
+
+  function terminar() {
+    const r = rec; rec = null; parar();
+    const a = analizar(r.rr);
+    const d = new Date(r.t0);
+    const p = x => String(x).padStart(2, '0');
+    const fh = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    ultima = { fh, dur: r.dur, rr: r.rr.map(o => Math.round(o.v * 10) / 10), ...a };
+    mostrar(ultima);
+    const h = leer(); h.unshift(ultima); guardar(h.slice(0, 60));
+    historial();
+    estado(a.valida ? 'Toma terminada y guardada.' : 'Toma terminada, pero no sirve. Repetila.', a.valida ? 'ok' : 'mal');
+  }
+
+  function mostrar(t) {
+    $('sRes').hidden = false;
+    $('rScore').textContent = fmt(t.score, 0);
+    $('rRmssd').textContent = fmt(t.rmssd, 1);
+    $('rLn').textContent = fmt(t.ln, 2);
+    $('rHr').textContent = fmt(t.hrMin) + ' / ' + fmt(t.hrProm) + ' / ' + fmt(t.hrMax);
+    $('rSdnn').textContent = fmt(t.sdnn, 1);
+    $('rArt').textContent = fmt(t.art, 1) + ' %';
+    const v = $('rVer');
+    v.className = 'veredicto ' + (t.valida ? 'ok' : 'mal');
+    v.textContent = t.valida
+      ? 'Toma válida: ' + t.buenos + ' de ' + t.n + ' latidos usados en ' + (t.dur / 60) + ' min.'
+      : 'No sirve: ' + t.fallas.join('; ') + '. Repetí la toma.';
+    $('rLinea').textContent = linea(t);
+  }
+
+  const linea = t => [t.fh, t.score != null ? Math.round(t.score) : '', '', t.hrMin != null ? Math.round(t.hrMin) : '', t.hrProm != null ? Math.round(t.hrProm) : '', t.hrMax != null ? Math.round(t.hrMax) : '', 'captura propia rmssd ' + fmt(t.rmssd, 1) + ' art ' + fmt(t.art, 1) + '%'].join(',');
+
+  function leer() { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (_) { return []; } }
+  function guardar(h) { try { localStorage.setItem(KEY, JSON.stringify(h)); } catch (_) { estado('No se pudo guardar en este teléfono. Copiá la línea antes de cerrar.', 'mal'); } }
+
+  function historial() {
+    const h = leer();
+    if (!h.length) { $('hist').innerHTML = '<p class="vacio">Todavía no hay tomas. La primera aparece acá al terminar.</p>'; return; }
+    $('hist').innerHTML = '<table><thead><tr><th>Fecha</th><th>Score</th><th>rMSSD</th><th>FC mín</th><th>Desc.</th><th>Estado</th></tr></thead><tbody>' +
+      h.map(t => '<tr><td>' + t.fh + '</td><td>' + fmt(t.score) + '</td><td>' + fmt(t.rmssd, 1) + '</td><td>' + fmt(t.hrMin) + '</td><td>' + fmt(t.art, 1) + ' %</td><td>' + (t.valida ? 'válida' : 'repetir') + '</td></tr>').join('') +
+      '</tbody></table>';
+  }
+
+  async function copiar() {
+    const txt = $('rLinea').textContent;
+    try { await navigator.clipboard.writeText(txt); estado('Línea copiada.', 'ok'); }
+    catch (_) { const r = document.createRange(); r.selectNodeContents($('rLinea')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); estado('Seleccioné la línea: copiala a mano.'); }
+  }
+
+  function bajarRR() {
+    if (!ultima) return;
+    const csv = 'indice,rr_ms\n' + ultima.rr.map((v, i) => i + ',' + v).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'rr_' + ultima.fh.replace(/[ :]/g, '-') + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  function dibujar() {
+    const c = $('cv'), dpr = devicePixelRatio || 1;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (c.width !== w * dpr) { c.width = w * dpr; c.height = h * dpr; }
+    const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    const css = getComputedStyle(document.documentElement);
+    const datos = live.filter(v => v >= 300 && v <= 2000);
+    if (datos.length < 2) return;
+    let lo = Math.min(...datos), hi = Math.max(...datos);
+    if (hi - lo < 100) { const m = (hi + lo) / 2; lo = m - 50; hi = m + 50; }
+    const pad = 16, y = v => h - pad - (v - lo) / (hi - lo) * (h - 2 * pad);
+    g.fillStyle = css.getPropertyValue('--mute'); g.font = '10px Inter, sans-serif';
+    g.fillText(Math.round(hi) + ' ms', 4, 11); g.fillText(Math.round(lo) + ' ms', 4, h - 4);
+    g.strokeStyle = css.getPropertyValue('--hrv'); g.lineWidth = 1.5; g.beginPath();
+    datos.forEach((v, i) => { const x = 44 + i / (datos.length - 1) * (w - 52); i ? g.lineTo(x, y(v)) : g.moveTo(x, y(v)); });
+    g.stroke();
+  }
+
+  $('bCon').onclick = conectar;
+  $('bDes').onclick = () => { try { device?.gatt.disconnect(); } catch (_) {} };
+  $('bIni').onclick = empezar;
+  $('bCan').onclick = cancelar;
+  $('bCopia').onclick = copiar;
+  $('bRr').onclick = bajarRR;
+  addEventListener('resize', dibujar);
+  historial();
+})();
+</script>
+</body>
+</html>
