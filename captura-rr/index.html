@@ -64,7 +64,7 @@
 </head>
 <body>
 <div class="pnl">
-  <div class="top"><b>Captura RR</b><span>v0.3 · prueba en paralelo</span></div>
+  <div class="top"><b>Captura RR</b><span>v0.4 · prueba en paralelo</span></div>
 
   <div id="estado" class="estado">Prendé la banda (mojá los electrodos) y tocá Conectar.</div>
 
@@ -110,7 +110,21 @@
       <button id="bCopia" class="sec">Copiar línea</button>
       <button id="bRr" class="sec">Bajar intervalos RR (.csv)</button>
     </div>
-    <p class="nota">La línea usa el formato del registro (fecha_hora,hrv,peso,hr_min,hr_prom,hr_max,nota). Peso queda vacío. Esta herramienta no escribe en el Registro matinal HRV.</p>
+    <div id="rEnv" class="nota"></div>
+    <p class="nota">La línea usa el formato del registro (fecha_hora,hrv,peso,hr_min,hr_prom,hr_max,nota). Peso queda vacío. Con la app vinculada, cada toma se manda sola al cuadro "Captura RR · BETA" del Registro matinal; no toca la lectura oficial de Elite HRV.</p>
+  </section>
+
+  <section>
+    <h2>Envío al Registro matinal</h2>
+    <div id="vinc" class="nota" style="margin:0 0 10px"></div>
+    <div class="fila">
+      <button id="bGen" class="sec">Generar clave nueva</button>
+      <button id="bVer" class="sec" hidden>Mostrar clave</button>
+      <button id="bCopK" class="sec" hidden>Copiar clave</button>
+      <button id="bPend" class="sec" hidden>Reenviar pendientes</button>
+    </div>
+    <div class="linea" id="kTxt" hidden></div>
+    <p class="nota">Una sola vez: tocá Generar clave nueva, después Copiar clave, y pegala en Supabase → Edge Functions → Secrets → Add new secret, con el nombre <b>CAPTURA_KEY</b>. La clave queda guardada solo en este teléfono y en Supabase. Si generás otra, hay que reemplazarla también allá.</p>
   </section>
 
   <section>
@@ -125,7 +139,8 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const KEY = 'capturaRR.v1';
+  const KEY = 'capturaRR.v1', KKEY = 'capturaRR.clave', VER = 'v0.4';
+  const FN = 'https://ezwxdwgjutdsewxeqlsp.supabase.co/functions/v1/captura-rr';
   let device = null, chr = null, wake = null;
   let live = [];            // últimos RR para el gráfico
   let rec = null;           // { t0, dur, rr: [] } mientras graba
@@ -251,6 +266,7 @@
     const h = leer(); h.unshift(ultima); guardar(h.slice(0, 60));
     historial();
     estado(a.valida ? 'Toma terminada y guardada.' : 'Toma terminada, pero no sirve. Repetila.', a.valida ? 'ok' : 'mal');
+    enviar(ultima);
   }
 
   function mostrar(t) {
@@ -277,8 +293,8 @@
   function historial() {
     const h = leer();
     if (!h.length) { $('hist').innerHTML = '<p class="vacio">Todavía no hay tomas. La primera aparece acá al terminar.</p>'; return; }
-    $('hist').innerHTML = '<table><thead><tr><th>Fecha</th><th>Score</th><th>rMSSD</th><th>FC mín</th><th>Desc.</th><th>Estado</th></tr></thead><tbody>' +
-      h.map(t => '<tr><td>' + t.fh + '</td><td>' + fmt(t.score) + '</td><td>' + fmt(t.rmssd, 1) + '</td><td>' + fmt(t.hrMin) + '</td><td>' + fmt(t.art, 1) + ' %</td><td>' + (t.valida ? 'válida' : 'repetir') + '</td></tr>').join('') +
+    $('hist').innerHTML = '<table><thead><tr><th>Fecha</th><th>Score</th><th>rMSSD</th><th>FC mín</th><th>Desc.</th><th>Estado</th><th>App</th></tr></thead><tbody>' +
+      h.map(t => '<tr><td>' + t.fh + '</td><td>' + fmt(t.score) + '</td><td>' + fmt(t.rmssd, 1) + '</td><td>' + fmt(t.hrMin) + '</td><td>' + fmt(t.art, 1) + ' %</td><td>' + (t.valida ? 'válida' : 'repetir') + '</td><td>' + (t.enviada ? 'enviada' : (clave() ? 'pendiente' : '—')) + '</td></tr>').join('') +
       '</tbody></table>';
   }
 
@@ -323,6 +339,53 @@
     datos.forEach((v, i) => { const x = 44 + i / (datos.length - 1) * (w - 52); i ? g.lineTo(x, y(v)) : g.moveTo(x, y(v)); });
     g.stroke();
   }
+
+  // ---- Envío a Supabase (función captura-rr con clave propia) ----
+  function clave() { try { return localStorage.getItem(KKEY) || ''; } catch (_) { return ''; } }
+  function pintarVinc() {
+    const k = clave(), pend = leer().filter(t => !t.enviada).length;
+    $('vinc').textContent = k ? 'Vinculada con el Registro matinal. Tomas sin enviar: ' + pend + '.' : 'Sin vincular: las tomas quedan solo en este teléfono.';
+    $('bVer').hidden = $('bCopK').hidden = !k; $('bPend').hidden = !k || !pend;
+  }
+  function generar() {
+    if (clave() && !confirm('Ya hay una clave. Si generás otra, tenés que reemplazarla también en Supabase. ¿Seguir?')) return;
+    const b = crypto.getRandomValues(new Uint8Array(32));
+    const k = btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    try { localStorage.setItem(KKEY, k); } catch (_) { estado('No se pudo guardar la clave en este teléfono.', 'mal'); return; }
+    $('kTxt').hidden = false; $('kTxt').textContent = k; pintarVinc(); historial();
+    estado('Clave generada. Copiala y cargala en Supabase como CAPTURA_KEY.', 'ok');
+  }
+  async function copiarClave() {
+    const k = clave(); if (!k) return;
+    try { await navigator.clipboard.writeText(k); estado('Clave copiada. Pegala en Supabase → Edge Functions → Secrets como CAPTURA_KEY.', 'ok'); }
+    catch (_) { $('kTxt').hidden = false; $('kTxt').textContent = k; estado('Copiala a mano desde el recuadro.'); }
+  }
+  async function enviar(t, silencioso) {
+    const k = clave(), out = $('rEnv');
+    if (!k) { if (!silencioso && out) out.textContent = 'No se envió al Registro matinal: falta vincular (sección Envío al Registro matinal).'; return false; }
+    if (!silencioso && out) out.textContent = 'Enviando al Registro matinal…';
+    try {
+      const r = await fetch(FN, { method: 'POST', headers: { 'content-type': 'application/json', 'x-captura-key': k }, body: JSON.stringify({ ...t, version: VER }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || ('error ' + r.status));
+      const h = leer(), x = h.find(z => z.fh === t.fh); if (x) { x.enviada = true; guardar(h); }
+      if (!silencioso && out) out.textContent = 'Enviada al Registro matinal. Aparece en la app la próxima vez que la abras.';
+      historial(); pintarVinc(); return true;
+    } catch (e) {
+      if (!silencioso && out) out.textContent = 'No se pudo enviar: ' + (e && e.message ? e.message : e) + '. Queda pendiente: tocá Reenviar pendientes.';
+      pintarVinc(); return false;
+    }
+  }
+  async function reenviar() {
+    const p = leer().filter(t => !t.enviada); let ok = 0;
+    for (const t of p.reverse()) if (await enviar(t, true)) ok++;
+    estado('Reenviadas ' + ok + ' de ' + p.length + '.', ok === p.length ? 'ok' : 'mal');
+  }
+  $('bGen').onclick = generar;
+  $('bCopK').onclick = copiarClave;
+  $('bVer').onclick = () => { const b = $('kTxt'); b.hidden = !b.hidden; b.textContent = clave(); };
+  $('bPend').onclick = reenviar;
+  pintarVinc();
 
   $('bCon').onclick = conectar;
   $('bDes').onclick = () => { try { device?.gatt.disconnect(); } catch (_) {} };
