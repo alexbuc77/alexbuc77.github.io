@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
-<!-- Athleticapp · versión 0.1 · 22-10-2026 · app mínima: sesión, medición con banda, semáforo y lectura manual -->
+<!-- Athleticapp · versión 0.2 · 22-10-2026 · v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
 <style>
   :root {
     --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
@@ -99,6 +99,26 @@
     <p class="aviso" id="lAviso">Por ahora el acceso es por invitación.</p>
   </section>
 
+  <!-- Doble factor: alta -->
+  <section id="vAlta" class="card hidden">
+    <h2>Activá el doble factor</h2>
+    <p class="peq">Es obligatorio para entrar. Escaneá el código con tu app autenticadora (Google Authenticator, Authy o 1Password) y escribí los 6 dígitos que te muestra.</p>
+    <div id="qr" style="background:#fff;border-radius:10px;padding:10px;width:220px;margin:12px auto"></div>
+    <p class="peq" style="text-align:center">Si no podés escanear, cargá esta clave a mano:<br><code id="secreto" style="word-break:break-all;color:var(--ink)"></code></p>
+    <div class="campo"><label for="aCod">Código de 6 dígitos</label><input id="aCod" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+    <button class="pri" id="bAlta" style="width:100%">Confirmar</button>
+    <p class="aviso" id="aAviso"></p>
+  </section>
+
+  <!-- Doble factor: código al entrar -->
+  <section id="vCod" class="card hidden">
+    <h2>Código de seguridad</h2>
+    <p class="peq">Abrí tu app autenticadora y escribí el código de Athleticapp.</p>
+    <div class="campo"><label for="cCod">Código de 6 dígitos</label><input id="cCod" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></div>
+    <button class="pri" id="bCod" style="width:100%">Entrar</button>
+    <p class="aviso" id="cAviso"></p>
+  </section>
+
   <!-- Consentimiento (primera vez) -->
   <section id="vCons" class="card hidden">
     <h2>Antes de empezar</h2>
@@ -157,7 +177,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.1 · 22-10-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.2 · 22-10-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -166,7 +186,7 @@
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.1';
+  const VER = '0.2';
   const sb = (window.__sbStub || window.supabase).createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   const $ = (id) => document.getElementById(id);
   const show = (id, on) => $(id).classList.toggle('hidden', !on);
@@ -188,13 +208,16 @@
     if (!data.session) return pantallaLogin();
     usuario = data.session.user;
     $('quien').textContent = usuario.email; show('bSalir', true);
+    if (!(await dobleFactor())) return;
     await cargarPerfil();
-    if (!perfil.consentimiento) { show('vLogin', false); show('vApp', false); show('vCons', true); return; }
-    show('vLogin', false); show('vCons', false); show('vApp', true);
+    ocultarTodo();
+    if (!perfil.consentimiento) { show('vCons', true); return; }
+    show('vApp', true);
     prepararForm();
     await cargarDatos();
   }
-  function pantallaLogin() { usuario = null; $('quien').textContent = ''; show('bSalir', false); show('vApp', false); show('vCons', false); show('vLogin', true); }
+  const ocultarTodo = () => ['vLogin', 'vAlta', 'vCod', 'vCons', 'vApp'].forEach((v) => show(v, false));
+  function pantallaLogin() { usuario = null; $('quien').textContent = ''; show('bSalir', false); ocultarTodo(); show('vLogin', true); }
   $('fLogin').addEventListener('submit', async (e) => {
     e.preventDefault(); $('lAviso').textContent = 'Entrando…'; $('lAviso').className = 'aviso';
     const { error } = await sb.auth.signInWithPassword({ email: $('lMail').value.trim(), password: $('lPass').value });
@@ -208,6 +231,33 @@
     const ok = await guardarDoc('config', 'perfil', perfil);
     if (ok) arrancar();
   });
+
+  // ---------- Doble factor (TOTP). Las reglas de la base exigen sesión aal2. ----------
+  let factorId = null;
+  async function dobleFactor() {
+    const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.currentLevel === 'aal2') return true;
+    const { data: fs } = await sb.auth.mfa.listFactors();
+    const todos = (fs && fs.all) || [], verif = todos.filter((f) => f.factor_type === 'totp' && f.status === 'verified');
+    ocultarTodo();
+    if (verif.length) { factorId = verif[0].id; show('vCod', true); $('cCod').value = ''; $('cCod').focus(); return false; }
+    for (const f of todos.filter((f) => f.status !== 'verified')) await sb.auth.mfa.unenroll({ factorId: f.id });
+    const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Athleticapp' });
+    if (error) { show('vAlta', true); $('aAviso').textContent = 'No se pudo iniciar el alta: ' + error.message; $('aAviso').className = 'aviso mal'; return false; }
+    factorId = data.id; $('qr').innerHTML = '<img alt="Código QR para la app autenticadora" style="width:200px;height:200px;display:block" src="' + data.totp.qr_code + '">'; $('secreto').textContent = data.totp.secret;
+    show('vAlta', true); return false;
+  }
+  async function verificar(inp, av) {
+    const code = $(inp).value.replace(/\D/g, '');
+    if (code.length !== 6) { $(av).textContent = 'Son 6 dígitos.'; $(av).className = 'aviso mal'; return; }
+    $(av).textContent = 'Verificando…'; $(av).className = 'aviso';
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId, code });
+    if (error) { $(av).textContent = 'Código incorrecto o vencido. Probá con el siguiente.'; $(av).className = 'aviso mal'; return; }
+    arrancar();
+  }
+  $('bAlta').addEventListener('click', () => verificar('aCod', 'aAviso'));
+  $('bCod').addEventListener('click', () => verificar('cCod', 'cAviso'));
+  $('cCod').addEventListener('keydown', (e) => { if (e.key === 'Enter') verificar('cCod', 'cAviso'); });
 
   // ---------- Datos ----------
   async function guardarDoc(coleccion, id, data) {
