@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Athleticapp</title>
+<meta name="theme-color" content="#141816">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
+<!-- Athleticapp · versión 0.1 · 22-10-2026 · app mínima: sesión, medición con banda, semáforo y lectura manual -->
+<style>
+  :root {
+    --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
+    --hrv: #23458f; --ok: #2f6b46; --warn: #9a6a12; --bad: #9a3b32; --viol: #6a3d9a; --sky: #1d6f9f; --beta: #a3366e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #141816; --card: #1c211f; --ink: #e4e8e3; --mute: #99a29a; --line: #343b37; --field: #111513;
+      --hrv: #8aa6e8; --ok: #7fc497; --warn: #e0b45e; --bad: #e08a7f; --viol: #b79cf0; --sky: #7cc8f0; --beta: #f08cc0;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #141816; --card: #1c211f; --ink: #e4e8e3; --mute: #99a29a; --line: #343b37; --field: #111513;
+    --hrv: #8aa6e8; --ok: #7fc497; --warn: #e0b45e; --bad: #e08a7f; --viol: #b79cf0; --sky: #7cc8f0; --beta: #f08cc0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .app { max-width: 560px; margin: 0 auto; padding: 16px 16px 40px; display: flex; flex-direction: column; gap: 18px; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; font-size: 12px; color: var(--mute); }
+  .top b { font-family: 'Fraunces', Georgia, serif; font-size: 20px; color: var(--ink); font-weight: 600; }
+  .top button { font-size: 12px; padding: 6px 10px; }
+  h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 18px; margin: 0 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  label { display: block; font-size: 12px; color: var(--mute); margin-bottom: 4px; }
+  input, select { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); color: var(--ink); }
+  button { font: inherit; font-weight: 600; font-size: 15px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  button.pri { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  button:disabled { opacity: .45; cursor: default; }
+  .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fila3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .campo { margin-bottom: 10px; }
+  .aviso { font-size: 13px; line-height: 1.45; color: var(--mute); margin: 8px 0 0; }
+  .aviso.mal { color: var(--bad); } .aviso.ok { color: var(--ok); }
+  .peq { font-size: 12px; color: var(--mute); line-height: 1.45; }
+  .hidden { display: none !important; }
+  /* Medición */
+  .med { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin: 12px 0; }
+  .med div { border: 1px solid var(--line); border-radius: 10px; padding: 8px 4px; }
+  .med span { display: block; font-size: 11px; color: var(--mute); }
+  .med b { font-family: 'Fraunces', Georgia, serif; font-size: 24px; font-weight: 600; }
+  .botones { display: flex; gap: 8px; flex-wrap: wrap; } .botones button { flex: 1 1 140px; }
+  /* Resultado (mismo diseño que el Registro v56) */
+  .sem { padding: 14px 16px 6px; border: 1px solid var(--line); border-bottom: 0; border-radius: 14px 14px 0 0; --tint: var(--card); background: var(--tint); }
+  .sem.solo { border-bottom: 1px solid var(--line); border-radius: 14px; padding-bottom: 14px; }
+  .sem .et { display: block; font-size: 13px; color: var(--mute); }
+  .sem .est { display: block; font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 600; line-height: 1.15; margin: 4px 0 12px; }
+  .sem p { font-size: 12px; color: var(--mute); margin: 10px 0 0; line-height: 1.45; }
+  .dia { padding: 2px 16px 14px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 14px 14px; --tint: var(--card); background: var(--tint); }
+  .dia ul { margin: 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.45; }
+  .dia li { padding: 9px 0 9px 19px; position: relative; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); } .dia li:first-child { border-top: 0; }
+  .dia li::before { content: ''; position: absolute; left: 0; top: calc(9px + .45em); width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+  .dia li.si::before { background: var(--ok); } .dia li.no::before { background: var(--warn); }
+  .optimo { --tint: color-mix(in srgb, var(--ok) 14%, var(--card)); border-color: color-mix(in srgb, var(--ok) 35%, var(--line)) !important; }
+  .facil { --tint: color-mix(in srgb, var(--warn) 14%, var(--card)); border-color: color-mix(in srgb, var(--warn) 35%, var(--line)) !important; }
+  .optativo { --tint: color-mix(in srgb, var(--bad) 14%, var(--card)); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)) !important; }
+  .obligado { --tint: color-mix(in srgb, var(--viol) 16%, var(--card)); border-color: color-mix(in srgb, var(--viol) 35%, var(--line)) !important; }
+  .s-ver { --c: var(--ok); } .s-ama { --c: var(--warn); } .s-roj { --c: var(--bad); } .s-vio { --c: var(--viol); }
+  .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .seg div { height: 8px; border-radius: 4px; background: var(--c); opacity: .22; }
+  .seg div.on { opacity: 1; height: 12px; margin-top: -2px; box-shadow: 0 0 0 2px var(--tint), 0 0 0 3px var(--c); }
+  .segl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; font-size: 11px; color: var(--mute); text-align: center; }
+  .segl .on { color: var(--ink); font-weight: 700; }
+  /* Gráfico */
+  svg { display: block; width: 100%; }
+  .hist { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .hist th, .hist td { text-align: right; padding: 7px 4px; border-bottom: 1px solid var(--line); }
+  .hist th:first-child, .hist td:first-child { text-align: left; }
+  .hist th { font-size: 11px; color: var(--mute); font-weight: 600; }
+  .badge { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--beta); border: 1px solid var(--beta); border-radius: 99px; padding: 1px 7px; vertical-align: middle; }
+  .pie { text-align: center; font-size: 11px; color: var(--mute); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><b>Athleticapp</b><span id="quien"></span><button id="bSalir" class="hidden">Salir</button></div>
+
+  <!-- Inicio de sesión -->
+  <section id="vLogin" class="card hidden">
+    <h2>Entrar</h2>
+    <form id="fLogin">
+      <div class="campo"><label for="lMail">Mail</label><input id="lMail" type="email" autocomplete="email" required></div>
+      <div class="campo"><label for="lPass">Contraseña</label><input id="lPass" type="password" autocomplete="current-password" required></div>
+      <button class="pri" type="submit" style="width:100%">Entrar</button>
+    </form>
+    <p class="aviso" id="lAviso">Por ahora el acceso es por invitación.</p>
+  </section>
+
+  <!-- Consentimiento (primera vez) -->
+  <section id="vCons" class="card hidden">
+    <h2>Antes de empezar</h2>
+    <p class="peq">Athleticapp guarda tus mediciones de variabilidad cardíaca, pulso, peso y notas para calcular tu estado diario. Son datos de salud. Solo vos podés verlos; quien administra la app puede acceder a la base para mantenerla. Podés pedir que se borren en cualquier momento. La app está en prueba: el semáforo orienta el entrenamiento y no reemplaza la opinión de un médico.</p>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink);margin:12px 0"><input id="cOk" type="checkbox" style="width:auto;margin-top:2px"> Acepto que se guarden y procesen mis datos de salud para este fin.</label>
+    <button class="pri" id="bCons" disabled style="width:100%">Continuar</button>
+  </section>
+
+  <!-- App -->
+  <div id="vApp" class="hidden" style="display:flex;flex-direction:column;gap:18px">
+    <div id="resultado"></div>
+
+    <section class="card">
+      <h2>Medir con la banda <span class="badge" id="betaMed">PRUEBA</span></h2>
+      <p class="peq" id="medAyuda">Al despertar, después de orinar y pesarte: sentado, 3 minutos quieto, banda puesta y húmeda. La toma dura 2 min 30 s.</p>
+      <div class="med"><div><span>Pulso</span><b id="mHr">—</b></div><div><span>Último RR (ms)</span><b id="mRr">—</b></div><div><span>Tiempo</span><b id="mT">—</b></div></div>
+      <div class="botones"><button id="bCon">Conectar banda</button><button id="bIni" class="pri" disabled>Empezar toma</button><button id="bCan" disabled>Cancelar</button></div>
+      <p class="aviso" id="mAviso"></p>
+    </section>
+
+    <section class="card">
+      <h2>Lectura de hoy</h2>
+      <p class="peq" id="formAyuda"></p>
+      <form id="fLect">
+        <div class="fila">
+          <div class="campo"><label for="iFecha">Fecha</label><input id="iFecha" type="date" required></div>
+          <div class="campo"><label for="iHora">Hora</label><input id="iHora" type="time" required></div>
+        </div>
+        <div class="fila">
+          <div class="campo"><label for="iHrv">HRV (score)</label><input id="iHrv" type="number" inputmode="numeric" min="1" max="120" step="1"></div>
+          <div class="campo"><label for="iPeso">Peso (kg)</label><input id="iPeso" type="number" inputmode="decimal" min="30" max="200" step="0.1"></div>
+        </div>
+        <div class="fila3">
+          <div class="campo"><label for="iMin">FC mín</label><input id="iMin" type="number" inputmode="numeric" min="25" max="150"></div>
+          <div class="campo"><label for="iProm">FC prom</label><input id="iProm" type="number" inputmode="numeric" min="25" max="180"></div>
+          <div class="campo"><label for="iMax">FC máx</label><input id="iMax" type="number" inputmode="numeric" min="25" max="250"></div>
+        </div>
+        <div class="fila">
+          <div class="campo"><label for="iMinEnt">Entreno de ayer (min)</label><input id="iMinEnt" type="number" inputmode="numeric" min="0" max="600"></div>
+          <div class="campo"><label for="iRpe">Esfuerzo de ayer (1 a 10)</label><input id="iRpe" type="number" inputmode="numeric" min="1" max="10"></div>
+        </div>
+        <div class="campo"><label for="iNota">Nota</label><input id="iNota" type="text" placeholder="sueño, alcohol, síntomas…"></div>
+        <button class="pri" type="submit" style="width:100%">Guardar lectura</button>
+        <p class="aviso" id="fAviso"></p>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>HRV, últimos 30 días</h2>
+      <svg id="graf" viewBox="0 0 520 170" role="img" aria-label="HRV de los últimos 30 días con banda de 7 días"></svg>
+      <p class="peq">Línea: tu score diario. Franja: tu banda de 7 días (media ± 1 desvío, mínimo 4 lecturas). Más arriba es mejor.</p>
+    </section>
+
+    <section class="card">
+      <h2>Últimas lecturas</h2>
+      <div id="hist"></div>
+    </section>
+  </div>
+  <p class="pie" id="version">Athleticapp · versión 0.1 · 22-10-2026</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(() => {
+  // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
+  const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
+  const VER = '0.1';
+  const sb = (window.__sbStub || window.supabase).createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  const $ = (id) => document.getElementById(id);
+  const show = (id, on) => $(id).classList.toggle('hidden', !on);
+  const fmt = (n, d = 0) => n == null || !isFinite(n) ? '—' : Number(n).toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const p2 = (x) => String(x).padStart(2, '0');
+  const hoy = () => { const d = new Date(); return { fecha: d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()), hora: p2(d.getHours()) + ':' + p2(d.getMinutes()) }; };
+  const dma = (f) => f.slice(8, 10) + '/' + f.slice(5, 7) + '/' + f.slice(0, 4);
+  const tms = (f) => Date.UTC(+f.slice(0, 4), +f.slice(5, 7) - 1, +f.slice(8, 10));
+  const iso = (t) => new Date(t).toISOString().slice(0, 10);
+  const media = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  const de = (a) => { if (a.length < 2) return null; const m = media(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1)); };
+
+  let usuario = null, perfil = {}, datos = [];
+
+  // ---------- Sesión ----------
+  async function arrancar() {
+    const { data } = await sb.auth.getSession();
+    if (!data.session) return pantallaLogin();
+    usuario = data.session.user;
+    $('quien').textContent = usuario.email; show('bSalir', true);
+    await cargarPerfil();
+    if (!perfil.consentimiento) { show('vLogin', false); show('vApp', false); show('vCons', true); return; }
+    show('vLogin', false); show('vCons', false); show('vApp', true);
+    prepararForm();
+    await cargarDatos();
+  }
+  function pantallaLogin() { usuario = null; $('quien').textContent = ''; show('bSalir', false); show('vApp', false); show('vCons', false); show('vLogin', true); }
+  $('fLogin').addEventListener('submit', async (e) => {
+    e.preventDefault(); $('lAviso').textContent = 'Entrando…'; $('lAviso').className = 'aviso';
+    const { error } = await sb.auth.signInWithPassword({ email: $('lMail').value.trim(), password: $('lPass').value });
+    if (error) { $('lAviso').textContent = 'No se pudo entrar: revisá el mail y la contraseña.'; $('lAviso').className = 'aviso mal'; return; }
+    $('lPass').value = ''; arrancar();
+  });
+  $('bSalir').addEventListener('click', async () => { await sb.auth.signOut(); pantallaLogin(); });
+  $('cOk').addEventListener('change', () => { $('bCons').disabled = !$('cOk').checked; });
+  $('bCons').addEventListener('click', async () => {
+    perfil = { ...perfil, consentimiento: new Date().toISOString(), consentimiento_version: 1 };
+    const ok = await guardarDoc('config', 'perfil', perfil);
+    if (ok) arrancar();
+  });
+
+  // ---------- Datos ----------
+  async function guardarDoc(coleccion, id, data) {
+    const { error } = await sb.from('docs').upsert({ usuario: usuario.id, coleccion, id, data, actualizado: new Date().toISOString() }, { onConflict: 'usuario,coleccion,id' });
+    if (error) { alertar('No se pudo guardar: ' + error.message); return false; }
+    return true;
+  }
+  function alertar(t) { const el = $('fAviso'); el.textContent = t; el.className = 'aviso mal'; }
+  async function cargarPerfil() {
+    const { data, error } = await sb.from('docs').select('data').eq('coleccion', 'config').eq('id', 'perfil').maybeSingle();
+    perfil = (!error && data && data.data) || {};
+  }
+  async function cargarDatos() {
+    const { data, error } = await sb.from('docs').select('id,data').eq('coleccion', 'lecturas').order('id', { ascending: true });
+    if (error) { alertar('No se pudieron leer tus lecturas: ' + error.message); return; }
+    datos = (data || []).map((r) => r.data).filter((d) => d && d.fecha).sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    pintar();
+  }
+
+  // ---------- Reglas del semáforo (mismas que el Registro matinal v56) ----------
+  const MIN7 = 4;
+  function v7(i, campo) { const t = tms(datos[i].fecha) - 6 * 864e5; return datos.slice(0, i + 1).filter((d) => tms(d.fecha) >= t && d[campo] != null).map((d) => d[campo]); }
+  function banda(i) { const v = v7(i, 'hrv'); if (v.length < MIN7) return null; const m = media(v), s = de(v); return { m, lo: m - s, hi: m + s, n: v.length }; }
+  function previos(i, campo, n) { const v = []; for (let k = i - 1; k >= 0 && v.length < n; k--) if (datos[k][campo] != null) v.push(datos[k][campo]); return v; }
+  function cargaPorDia() { const c = {}; datos.forEach((d) => { if (d.carga_min != null && d.carga_rpe != null) c[iso(tms(d.fecha) - 864e5)] = d.carga_min * d.carga_rpe; }); return c; }
+  function estado(i) {
+    const u = datos[i], b = banda(i);
+    if (u.hrv == null || !b) return { sin: u.hrv == null ? 'La última lectura no tiene HRV.' : 'Datos insuficientes (' + v7(i, 'hrv').length + ' de 7). Hacen falta al menos 4 lecturas en los últimos 7 días.' };
+    const pv = previos(i, 'hr_min', 28).sort((x, y) => x - y), basal = pv.length >= 3 ? pv[Math.floor((pv.length - 1) * 0.25)] : null;
+    const bajo = u.hrv < b.lo, alto = u.hrv > b.hi, pulso = u.hr_min != null && basal != null && u.hr_min >= basal + 6;
+    const h7 = v7(i, 'hrv'), h28 = previos(i, 'hrv', 28);
+    const m7baja = h7.length >= MIN7 && h28.length >= 14 && media(h7) < media(h28) - de(h28);
+    // Carga manual (minutos × esfuerzo, Foster 2001). Regla propia: 7 días por encima de 1,3 veces la media semanal de 4 semanas.
+    const C = cargaPorDia(), t = tms(u.fecha); let c7 = null, c28 = null, ratio = null;
+    const dias28 = []; for (let k = 1; k <= 28; k++) { const v = C[iso(t - k * 864e5)]; if (v != null) dias28.push(k); }
+    if (dias28.length >= 14) { const sum = (a, z) => { let s = 0; for (let k = a; k <= z; k++) s += C[iso(t - k * 864e5)] || 0; return s; }; c7 = sum(1, 7); c28 = sum(1, 28) / 4; ratio = c28 > 0 ? c7 / c28 : null; }
+    const cargaAlta = ratio != null && ratio > 1.3;
+    const cls = bajo && pulso ? 'obligado' : (bajo || pulso) ? 'optativo' : (alto || cargaAlta || m7baja) ? 'facil' : 'optimo';
+    return { cls, u, b, basal, bajo, alto, pulso, m7baja, h7, h28, c7, c28, ratio, cargaAlta };
+  }
+  const SEM = [['optimo', 's-ver', 'Óptimo / Carga', 'Carga'], ['facil', 's-ama', 'Entreno fácil zona 2', 'Fácil Z2'], ['optativo', 's-roj', 'Día de descanso', 'Descanso'], ['obligado', 's-vio', 'Te estás por enfermar o tomaste alcohol anoche', 'Alerta']];
+
+  function pintarResultado() {
+    const box = $('resultado'), n = datos.length;
+    const cab = (cls, fecha, est, nota, solo) => '<div class="sem ' + (cls || '') + (solo ? ' solo' : '') + '"><span class="et">Resultado de la lectura del ' + (fecha ? dma(fecha) : '—') + '</span><span class="est">' + est + '</span><div class="seg">' + SEM.map((x) => '<div class="' + x[1] + (x[0] === cls ? ' on' : '') + '"></div>').join('') + '</div><div class="segl">' + SEM.map((x) => '<span' + (x[0] === cls ? ' class="on"' : '') + '>' + x[3] + '</span>').join('') + '</div>' + (nota ? '<p>' + nota + '</p>' : '') + '</div>';
+    if (!n) { box.innerHTML = cab('', null, 'Sin estado todavía', 'Cargá tu primera lectura. El semáforo necesita al menos 4 lecturas en 7 días.', true); return; }
+    const e = estado(n - 1), f = datos[n - 1].fecha, nota = f !== hoy().fecha ? 'Todavía no cargaste la lectura de hoy: este es el estado de tu última lectura.' : '';
+    if (e.sin) { box.innerHTML = cab('', f, 'Sin estado', e.sin + (nota ? ' ' + nota : ''), true); return; }
+    const a = SEM.find((x) => x[0] === e.cls);
+    const li = (ok, t) => '<li class="' + (ok ? 'si' : 'no') + '">' + t + '</li>';
+    let s = '<ul>';
+    s += li(!e.bajo && !e.alto && !e.m7baja, 'HRV ' + e.u.hrv + ': ' + (e.bajo ? 'bajo la banda' : e.alto ? 'sobre la banda (rebote, no habilita carga)' : 'dentro de la banda') + ' (' + fmt(e.b.lo, 1) + ' a ' + fmt(e.b.hi, 1) + ', ' + e.b.n + ' de 7 días)' + (e.m7baja ? '. Media de 7 días ' + fmt(media(e.h7), 1) + ', por debajo de tu rango de 4 semanas' : ''));
+    s += li(!e.pulso, 'FC mínima ' + (e.u.hr_min ?? 'sin dato') + (e.basal != null && e.u.hr_min != null ? ': ' + (e.u.hr_min - e.basal >= 0 ? '+' : '') + fmt(e.u.hr_min - e.basal) + ' contra tu basal de ' + fmt(e.basal) + ' (alerta desde +6)' : e.basal == null ? ' (tu basal aparece con 3 lecturas previas)' : ''));
+    s += e.ratio != null ? li(!e.cargaAlta, 'Carga de 7 días ' + fmt(e.c7) + ' contra ' + fmt(e.c28) + ' de media semanal (' + fmt(e.ratio, 2) + ' veces)') : '<li>Carga de entrenamiento: sin dato suficiente (hacen falta 14 días con minutos y esfuerzo cargados en 4 semanas). El estado sale solo de la lectura.</li>';
+    s += '</ul><p class="peq" style="margin:10px 0 0">Orienta en qué días conviene ubicar las sesiones de calidad; no reemplaza tu plan. Rojo: HRV bajo la banda o FC mínima alta. Violeta: las dos a la vez. Amarillo: HRV sobre la banda, media de 7 días baja o carga alta. Base: entrenamiento guiado por HRV (Plews y col. 2013; Granero-Gallegos y col. 2020); los umbrales de carga son regla propia.</p>';
+    box.innerHTML = cab(e.cls, f, a[2], nota) + '<div class="dia ' + e.cls + '">' + s + '</div>';
+  }
+
+  function pintarGrafico() {
+    const svg = $('graf'), W = 520, H = 170, pl = 30, pr = 8, pt = 10, pb = 22;
+    const t1 = tms(hoy().fecha), t0 = t1 - 29 * 864e5;
+    const idx = datos.map((d, i) => [d, i]).filter(([d]) => tms(d.fecha) >= t0 && d.hrv != null);
+    if (idx.length < 2) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" font-size="14" fill="var(--mute)">Aparece con 2 lecturas o más</text>'; return; }
+    const bandas = idx.map(([d, i]) => [d, banda(i)]).filter(([, b]) => b);
+    const vals = idx.map(([d]) => d.hrv).concat(bandas.flatMap(([, b]) => [b.lo, b.hi]));
+    let lo = Math.floor(Math.min(...vals) - 3), hi = Math.ceil(Math.max(...vals) + 3);
+    const x = (f) => pl + (tms(f) - t0) / (t1 - t0) * (W - pl - pr), y = (v) => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
+    let s = '';
+    [lo, (lo + hi) / 2, hi].forEach((v) => { s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (pl - 4) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="10" fill="var(--mute)">' + Math.round(v) + '</text>'; });
+    if (bandas.length > 1) s += '<path d="M' + bandas.map(([d, b]) => x(d.fecha) + ',' + y(b.hi)).join('L') + 'L' + bandas.slice().reverse().map(([d, b]) => x(d.fecha) + ',' + y(b.lo)).join('L') + 'Z" fill="var(--hrv)" opacity=".14"/>';
+    s += '<polyline points="' + idx.map(([d]) => x(d.fecha) + ',' + y(d.hrv)).join(' ') + '" fill="none" stroke="var(--hrv)" stroke-width="2" stroke-linejoin="round"/>';
+    idx.forEach(([d], k) => { s += '<circle cx="' + x(d.fecha) + '" cy="' + y(d.hrv) + '" r="' + (k === idx.length - 1 ? 4.5 : 2.5) + '" fill="var(--hrv)"><title>' + dma(d.fecha) + ': ' + d.hrv + '</title></circle>'; });
+    [t0, (t0 + t1) / 2, t1].forEach((t, k) => { const f = iso(t); s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + ['start', 'middle', 'end'][k] + '" font-size="10" fill="var(--mute)">' + f.slice(8, 10) + '/' + f.slice(5, 7) + '</text>'; });
+    s += '<text x="' + (W - pr) + '" y="' + (pt + 11) + '" text-anchor="end" font-size="11" font-weight="700" fill="var(--ok)">↑ más arriba es mejor</text>';
+    svg.innerHTML = s;
+  }
+
+  function pintarHist() {
+    const u = datos.slice(-10).reverse();
+    $('hist').innerHTML = u.length ? '<table class="hist"><thead><tr><th>Fecha</th><th>HRV</th><th>FC mín</th><th>Peso</th><th>Fuente</th></tr></thead><tbody>' + u.map((d) => '<tr><td>' + dma(d.fecha) + '</td><td>' + (d.hrv ?? '—') + '</td><td>' + (d.hr_min ?? '—') + '</td><td>' + fmt(d.peso, 1) + '</td><td>' + (d.fuente === 'banda' ? 'banda' : 'manual') + '</td></tr>').join('') + '</tbody></table>' : '<p class="peq">Todavía no hay lecturas.</p>';
+  }
+  function pintar() { pintarResultado(); pintarGrafico(); pintarHist(); }
+
+  // ---------- Formulario ----------
+  const elite = () => perfil.fuente_oficial === 'elite';
+  function prepararForm() {
+    const h = hoy(); $('iFecha').value = h.fecha; $('iHora').value = h.hora;
+    $('formAyuda').textContent = elite()
+      ? 'Tu fuente oficial es Elite HRV: cargá acá sus valores. La toma con la banda de arriba se guarda aparte, para compararla.'
+      : 'Si mediste con la banda, los valores se completan solos. Revisalos, sumá el peso y guardá.';
+    $('betaMed').textContent = elite() ? 'COMPARACIÓN' : 'PRUEBA';
+  }
+  const num = (id) => { const v = $(id).value.trim().replace(',', '.'); return v === '' ? null : Number(v); };
+  $('fLect').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fecha = $('iFecha').value, hora = $('iHora').value;
+    const d = { fecha, hora, hrv: num('iHrv'), hr_min: num('iMin'), hr_prom: num('iProm'), hr_max: num('iMax'), peso: num('iPeso'), carga_min: num('iMinEnt'), carga_rpe: num('iRpe'), nota: $('iNota').value.trim() || null, guardado: new Date().toISOString(), app: VER };
+    if (d.hrv == null && d.peso == null) { alertar('Cargá al menos el HRV o el peso.'); return; }
+    if (d.hr_max != null && d.hr_max > 200) { alertar('FC máxima mayor a 200: la lectura no sirve, repetila.'); return; }
+    if ((d.carga_min == null) !== (d.carga_rpe == null)) { alertar('Para la carga hacen falta los minutos y el esfuerzo, o ninguno de los dos.'); return; }
+    if (ultimaToma && ultimaToma.fecha === fecha && !elite()) { d.fuente = 'banda'; d.rmssd = ultimaToma.rmssd; d.artefactos = ultimaToma.art; }
+    const prev = datos.find((x) => x.fecha === fecha);
+    if (prev) Object.keys(prev).forEach((k) => { if (d[k] == null && prev[k] != null) d[k] = prev[k]; });
+    Object.keys(d).forEach((k) => d[k] == null && delete d[k]);
+    if (await guardarDoc('lecturas', fecha, d)) { $('fAviso').textContent = 'Guardada.'; $('fAviso').className = 'aviso ok'; await cargarDatos(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+
+  // ---------- Medición con la banda (misma corrección que Captura RR v0.4) ----------
+  let device = null, chr = null, rec = null, timer = null, wake = null, ultimaToma = null;
+  const mAviso = (t, c) => { $('mAviso').textContent = t; $('mAviso').className = 'aviso' + (c ? ' ' + c : ''); };
+  if (!('bluetooth' in navigator)) { mAviso('Este navegador no tiene Bluetooth web. Usá Chrome en Android o en la compu. En iPhone todavía no funciona.', 'mal'); $('bCon').disabled = true; }
+  function parse(dv) { const f = dv.getUint8(0); let i = 1; const hr = (f & 1) ? dv.getUint16(i, true) : dv.getUint8(i); i += (f & 1) ? 2 : 1; if (f & 8) i += 2; const rr = []; if (f & 16) for (; i + 1 < dv.byteLength; i += 2) rr.push(dv.getUint16(i, true) * 1000 / 1024); return { hr, rr }; }
+  function onData(ev) { const { hr, rr } = parse(ev.target.value); $('mHr').textContent = hr || '—'; if (rr.length) { $('mRr').textContent = Math.round(rr[rr.length - 1]); if (rec) rec.rr.push(...rr); } }
+  $('bCon').addEventListener('click', async () => {
+    try {
+      device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+      device.addEventListener('gattserverdisconnected', () => { $('bCon').disabled = false; $('bIni').disabled = true; if (rec) { cortar(); mAviso('Se cortó la conexión en medio de la toma. Repetila.', 'mal'); } else mAviso('Banda desconectada.'); });
+      mAviso('Conectando…');
+      const svc = await (await device.gatt.connect()).getPrimaryService('heart_rate');
+      chr = await svc.getCharacteristic('heart_rate_measurement'); chr.addEventListener('characteristicvaluechanged', onData); await chr.startNotifications();
+      $('bCon').disabled = true; $('bIni').disabled = false; mAviso('Conectada: ' + (device.name || 'banda') + '. Esperá unos segundos quieto y tocá Empezar toma.', 'ok');
+    } catch (e) { mAviso(e && e.name === 'NotFoundError' ? 'No elegiste ninguna banda.' : 'No se pudo conectar: ' + (e && e.message ? e.message : e) + '. Si otra app está conectada a la banda, cerrala.', 'mal'); }
+  });
+  $('bIni').addEventListener('click', async () => {
+    rec = { t0: Date.now(), dur: 150, rr: [] }; $('bIni').disabled = true; $('bCan').disabled = false;
+    try { wake = await navigator.wakeLock?.request('screen'); } catch (_) { wake = null; }
+    mAviso('Grabando. Quieto y respirando normal.'); timer = setInterval(tic, 250); tic();
+  });
+  $('bCan').addEventListener('click', () => { rec = null; cortar(); mAviso('Toma cancelada.'); });
+  function tic() { const r = rec.dur - (Date.now() - rec.t0) / 1000, s = Math.max(0, Math.ceil(r)); $('mT').textContent = Math.floor(s / 60) + ':' + p2(s % 60); if (r <= 0) terminar(); }
+  function cortar() { clearInterval(timer); timer = null; try { wake?.release(); } catch (_) {} wake = null; $('bCan').disabled = true; $('bIni').disabled = !(device && device.gatt.connected); $('mT').textContent = '—'; }
+  const mediana = (a) => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  function analizar(rr) {
+    const n = rr.length, ok = rr.map((v) => v >= 300 && v <= 2000);
+    for (let i = 0; i < n; i++) { if (!ok[i]) continue; const vec = []; for (let j = Math.max(0, i - 5); j <= Math.min(n - 1, i + 5); j++) if (j !== i && rr[j] >= 300 && rr[j] <= 2000) vec.push(rr[j]); if (vec.length >= 4) { const m = mediana(vec); if (Math.abs(rr[i] - m) > 0.2 * m) ok[i] = false; } }
+    const buenos = rr.filter((v, i) => ok[i]); let sq = 0, pares = 0;
+    for (let i = 1; i < n; i++) if (ok[i] && ok[i - 1]) { const d = rr[i] - rr[i - 1]; sq += d * d; pares++; }
+    const rmssd = pares ? Math.sqrt(sq / pares) : null, m = buenos.length ? media(buenos) : null;
+    const hrs = buenos.map((v) => 60000 / v), art = n ? (n - buenos.length) / n * 100 : 100;
+    const hrMin = hrs.length ? Math.min(...hrs) : null, hrMax = hrs.length ? Math.max(...hrs) : null, hrProm = m ? 60000 / m : null;
+    const score = rmssd ? Math.log(rmssd) / 6.5 * 100 : null, fallas = [];
+    if (n < 60) fallas.push('pocos latidos registrados (' + n + ')');
+    if (art > 5) fallas.push('latidos descartados ' + fmt(art, 1) + ' % (tope 5 %)');
+    if (hrMax != null && hrMax > 200) fallas.push('FC máx ' + Math.round(hrMax) + ' (tope 200)');
+    return { n, buenos: buenos.length, art, rmssd, score, hrMin, hrProm, hrMax, valida: !fallas.length, fallas };
+  }
+  async function terminar() {
+    const r = rec; rec = null; cortar();
+    const a = analizar(r.rr), d = new Date(r.t0), fecha = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()), hora = p2(d.getHours()) + ':' + p2(d.getMinutes());
+    if (!a.valida) { mAviso('La toma no sirve: ' + a.fallas.join('; ') + '. Repetila.', 'mal'); }
+    else mAviso('Toma válida: score ' + fmt(a.score) + ', rMSSD ' + fmt(a.rmssd, 1) + ' ms, FC ' + fmt(a.hrMin) + ' / ' + fmt(a.hrProm) + ' / ' + fmt(a.hrMax) + ', descartados ' + fmt(a.art, 1) + ' %.', 'ok');
+    const cap = { fecha, hora, score: a.score && Math.round(a.score * 100) / 100, rmssd: a.rmssd && Math.round(a.rmssd * 100) / 100, fc_min: a.hrMin && Math.round(a.hrMin * 10) / 10, fc_med: a.hrProm && Math.round(a.hrProm * 10) / 10, fc_max: a.hrMax && Math.round(a.hrMax * 10) / 10, n: a.n, buenos: a.buenos, art: Math.round(a.art * 100) / 100, dur: r.dur, valida: a.valida, fallas: a.fallas, version: 'app ' + VER, rr: r.rr.map((v) => Math.round(v * 10) / 10), recibido: new Date().toISOString() };
+    await guardarDoc('captura_rr', fecha + 'T' + hora.replace(':', '-'), cap);
+    if (a.valida) {
+      ultimaToma = { fecha, ...a };
+      if (!elite()) { $('iFecha').value = fecha; $('iHora').value = hora; $('iHrv').value = Math.round(a.score); $('iMin').value = Math.round(a.hrMin); $('iProm').value = Math.round(a.hrProm); $('iMax').value = Math.round(a.hrMax); $('fAviso').textContent = 'Valores de la banda cargados. Sumá el peso y guardá.'; $('fAviso').className = 'aviso ok'; }
+    }
+  }
+
+  sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') pantallaLogin(); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  window.__app = { estado: (i) => estado(i), datos: () => datos };
+  arrancar();
+})();
+</script>
+</body>
+</html>
