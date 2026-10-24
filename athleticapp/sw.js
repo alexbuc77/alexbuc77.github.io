@@ -1,5 +1,5 @@
 // Athleticapp: service worker mínimo. Va siempre a la red y, si no hay conexión, usa la última copia de la app (nunca datos).
-const CACHE = 'athleticapp-v0.2';
+const CACHE = 'athleticapp-v0.3';
 self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './manifest.webmanifest', './icon-192.png']))); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

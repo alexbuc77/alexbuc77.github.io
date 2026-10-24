@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
-<!-- Athleticapp · versión 0.2 · 22-10-2026 · v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
+<!-- Athleticapp · versión 0.3 · 24-10-2026 · v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
 <style>
   :root {
     --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
@@ -167,6 +167,13 @@
     </section>
 
     <section class="card">
+      <h2>Garmin <span class="badge">PRUEBA</span></h2>
+      <p class="peq" id="gEstado">Revisando la conexión…</p>
+      <div class="botones"><button id="gCon" class="pri" disabled>Conectar Garmin</button><button id="gDes" class="hidden">Desconectar</button></div>
+      <p class="aviso" id="gAviso"></p>
+    </section>
+
+    <section class="card">
       <h2>HRV, últimos 30 días</h2>
       <svg id="graf" viewBox="0 0 520 170" role="img" aria-label="HRV de los últimos 30 días con banda de 7 días"></svg>
       <p class="peq">Línea: tu score diario. Franja: tu banda de 7 días (media ± 1 desvío, mínimo 4 lecturas). Más arriba es mejor.</p>
@@ -177,7 +184,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.2 · 22-10-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.3 · 24-10-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -215,7 +222,40 @@
     show('vApp', true);
     prepararForm();
     await cargarDatos();
+    await estadoGarmin();
   }
+
+  // ---------- Garmin (API oficial) ----------
+  const fh = (t) => t ? new Date(t).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
+  async function estadoGarmin() {
+    const q = new URLSearchParams(location.search), vuelta = q.get('garmin');
+    if (vuelta) {
+      $('gAviso').textContent = vuelta === 'ok' ? 'Garmin conectado. Los últimos 30 días llegan en los próximos minutos.' : vuelta === 'cancelado' ? 'Cancelaste la conexión en Garmin.' : 'No se pudo conectar: ' + (q.get('det') || 'error desconocido') + '.';
+      $('gAviso').className = 'aviso' + (vuelta === 'ok' ? '' : ' mal');
+      history.replaceState(null, '', location.pathname);
+    }
+    const { data, error } = await sb.rpc('garmin_estado');
+    const c = !error && data && data[0];
+    $('gEstado').textContent = error ? 'No se pudo leer el estado de Garmin.' : c ? 'Conectado desde el ' + fh(c.conectado) + '. Los datos llegan solos cuando el reloj sincroniza con Garmin Connect.' : 'Sin conectar. Al conectar, Garmin te pide permiso y vuelve acá.';
+    $('gCon').disabled = false; $('gCon').textContent = c ? 'Volver a conectar' : 'Conectar Garmin';
+    show('gDes', !!c);
+  }
+  async function llamarGarmin(accion) {
+    const { data, error } = await sb.functions.invoke('garmin-conectar', { body: { accion } });
+    if (error) { let m = error.message; try { m = (await error.context.json()).error || m; } catch (_) {} throw new Error(m); }
+    return data;
+  }
+  $('gCon').addEventListener('click', async () => {
+    $('gCon').disabled = true; $('gAviso').textContent = 'Abriendo Garmin…'; $('gAviso').className = 'aviso';
+    try { const d = await llamarGarmin('conectar'); location.href = d.url; }
+    catch (e) { $('gAviso').textContent = 'No se pudo iniciar: ' + e.message; $('gAviso').className = 'aviso mal'; $('gCon').disabled = false; }
+  });
+  $('gDes').addEventListener('click', async () => {
+    $('gDes').disabled = true;
+    try { await llamarGarmin('desconectar'); $('gAviso').textContent = 'Garmin desconectado. Los datos ya guardados quedan en tu cuenta.'; $('gAviso').className = 'aviso'; }
+    catch (e) { $('gAviso').textContent = 'No se pudo desconectar: ' + e.message; $('gAviso').className = 'aviso mal'; }
+    $('gDes').disabled = false; await estadoGarmin();
+  });
   const ocultarTodo = () => ['vLogin', 'vAlta', 'vCod', 'vCons', 'vApp'].forEach((v) => show(v, false));
   function pantallaLogin() { usuario = null; $('quien').textContent = ''; show('bSalir', false); ocultarTodo(); show('vLogin', true); }
   $('fLogin').addEventListener('submit', async (e) => {
