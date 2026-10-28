@@ -64,7 +64,7 @@
 </head>
 <body>
 <div class="pnl">
-  <div class="top"><b>Captura RR</b><span>v0.4 · prueba en paralelo</span></div>
+  <div class="top"><b>Captura RR</b><span>v0.5 · prueba en paralelo</span></div>
 
   <div id="estado" class="estado">Prendé la banda (mojá los electrodos) y tocá Conectar.</div>
 
@@ -139,7 +139,35 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const KEY = 'capturaRR.v1', KKEY = 'capturaRR.clave', VER = 'v0.4';
+  const KEY = 'capturaRR.v1', KKEY = 'capturaRR.clave', VER = 'v0.5';
+  // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
+  let actx = null;
+  function campana(fin) {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const t = actx.currentTime, notas = fin ? [880, 660] : [660, 880];
+      notas.forEach((f, i) => {
+        const o = actx.createOscillator(), g = actx.createGain(), s = t + i * 0.22;
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.35, s + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.9);
+        o.connect(g); g.connect(actx.destination); o.start(s); o.stop(s + 0.95);
+      });
+    } catch (_) {}
+  }
+  function decir(txt) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(txt), vs = speechSynthesis.getVoices();
+      u.lang = 'en-US';
+      const v = vs.find((x) => /^en[-_]US/i.test(x.lang)) || vs.find((x) => /^en/i.test(x.lang));
+      if (v) u.voice = v;
+      setTimeout(() => speechSynthesis.speak(u), 450);
+    } catch (_) {}
+  }
+  function aviso(fin) { campana(fin); decir(fin ? 'Timer finished' : 'Timer started'); }
+
   const FN = 'https://ezwxdwgjutdsewxeqlsp.supabase.co/functions/v1/captura-rr';
   let device = null, chr = null, wake = null;
   let live = [];            // últimos RR para el gráfico
@@ -201,6 +229,7 @@
 
   async function empezar() {
     rec = { t0: Date.now(), dur: +$('dur').value, rr: [] };
+    aviso(false);
     $('bIni').disabled = true; $('bCan').disabled = false; $('dur').disabled = true; $('sRes').hidden = true;
     try { wake = await navigator.wakeLock?.request('screen'); } catch (_) { wake = null; }
     estado('Grabando. Quieto y respirando normal.');
@@ -257,6 +286,7 @@
 
   function terminar() {
     const r = rec; rec = null; parar();
+    aviso(true);
     const a = analizar(r.rr);
     const d = new Date(r.t0);
     const p = x => String(x).padStart(2, '0');

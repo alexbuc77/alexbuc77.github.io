@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
-<!-- Athleticapp · versión 0.3 · 24-10-2026 · v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
+<!-- Athleticapp · versión 0.4 · 28-10-2026 · v0.4: campana y voz al empezar y terminar la toma; v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
 <style>
   :root {
     --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
@@ -193,7 +193,35 @@
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.2';
+  const VER = '0.4';
+  // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
+  let actx = null;
+  function campana(fin) {
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const t = actx.currentTime, notas = fin ? [880, 660] : [660, 880];
+      notas.forEach((f, i) => {
+        const o = actx.createOscillator(), g = actx.createGain(), s = t + i * 0.22;
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.35, s + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.9);
+        o.connect(g); g.connect(actx.destination); o.start(s); o.stop(s + 0.95);
+      });
+    } catch (_) {}
+  }
+  function decir(txt) {
+    try {
+      if (!('speechSynthesis' in window)) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(txt), vs = speechSynthesis.getVoices();
+      u.lang = 'en-US';
+      const v = vs.find((x) => /^en[-_]US/i.test(x.lang)) || vs.find((x) => /^en/i.test(x.lang));
+      if (v) u.voice = v;
+      setTimeout(() => speechSynthesis.speak(u), 450);
+    } catch (_) {}
+  }
+  function aviso(fin) { campana(fin); decir(fin ? 'Timer finished' : 'Timer started'); }
+
   const sb = (window.__sbStub || window.supabase).createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   const $ = (id) => document.getElementById(id);
   const show = (id, on) => $(id).classList.toggle('hidden', !on);
@@ -422,7 +450,7 @@
     } catch (e) { mAviso(e && e.name === 'NotFoundError' ? 'No elegiste ninguna banda.' : 'No se pudo conectar: ' + (e && e.message ? e.message : e) + '. Si otra app está conectada a la banda, cerrala.', 'mal'); }
   });
   $('bIni').addEventListener('click', async () => {
-    rec = { t0: Date.now(), dur: 150, rr: [] }; $('bIni').disabled = true; $('bCan').disabled = false;
+    rec = { t0: Date.now(), dur: 150, rr: [] }; aviso(false); $('bIni').disabled = true; $('bCan').disabled = false;
     try { wake = await navigator.wakeLock?.request('screen'); } catch (_) { wake = null; }
     mAviso('Grabando. Quieto y respirando normal.'); timer = setInterval(tic, 250); tic();
   });
@@ -445,7 +473,7 @@
     return { n, buenos: buenos.length, art, rmssd, score, hrMin, hrProm, hrMax, valida: !fallas.length, fallas };
   }
   async function terminar() {
-    const r = rec; rec = null; cortar();
+    const r = rec; rec = null; cortar(); aviso(true);
     const a = analizar(r.rr), d = new Date(r.t0), fecha = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()), hora = p2(d.getHours()) + ':' + p2(d.getMinutes());
     if (!a.valida) { mAviso('La toma no sirve: ' + a.fallas.join('; ') + '. Repetila.', 'mal'); }
     else mAviso('Toma válida: score ' + fmt(a.score) + ', rMSSD ' + fmt(a.rmssd, 1) + ' ms, FC ' + fmt(a.hrMin) + ' / ' + fmt(a.hrProm) + ' / ' + fmt(a.hrMax) + ', descartados ' + fmt(a.art, 1) + ' %.', 'ok');
