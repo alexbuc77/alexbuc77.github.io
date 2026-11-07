@@ -43,6 +43,7 @@
   button:focus-visible, select:focus-visible { outline: 2px solid var(--hrv); outline-offset: 2px; }
   .vivo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
   .cifra { font-family: var(--display); font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .cifra.prov { color: var(--mute); }
   .pie { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
   canvas { display: block; width: 100%; height: 120px; margin-top: 12px; background: var(--field); border: 1px solid var(--line); }
   .res { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 10px; }
@@ -64,7 +65,7 @@
 </head>
 <body>
 <div class="pnl">
-  <div class="top"><b>Captura RR</b><span>v0.5 · prueba en paralelo</span></div>
+  <div class="top"><b>Captura RR</b><span>v0.6 · prueba en paralelo</span></div>
 
   <div id="estado" class="estado">Prendé la banda (mojá los electrodos) y tocá Conectar.</div>
 
@@ -83,9 +84,10 @@
     </div>
     <div class="vivo">
       <div><div class="cifra" id="vHr">—</div><div class="pie">FC (lpm)</div></div>
-      <div><div class="cifra" id="vRr">—</div><div class="pie">Último RR (ms)</div></div>
+      <div><div class="cifra" id="vHrv">—</div><div class="pie" id="vHrvPie">HRV score</div></div>
       <div><div class="cifra" id="vT">—</div><div class="pie">Restante</div></div>
     </div>
+    <p class="nota" id="vDet" style="margin-top:6px">rMSSD — · último RR —</p>
     <canvas id="cv" aria-label="Tacograma: intervalos RR en vivo"></canvas>
     <div class="fila" style="margin-top:12px">
       <button id="bIni" disabled>Empezar toma</button>
@@ -139,7 +141,7 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const KEY = 'capturaRR.v1', KKEY = 'capturaRR.clave', VER = 'v0.5';
+  const KEY = 'capturaRR.v1', KKEY = 'capturaRR.clave', VER = 'v0.6';
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -196,11 +198,27 @@
     const { hr, rr } = parse(ev.target.value);
     $('vHr').textContent = hr || '—';
     if (rr.length) {
-      $('vRr').textContent = Math.round(rr[rr.length - 1]);
+      ultRr = rr[rr.length - 1];
       live.push(...rr); if (live.length > 120) live = live.slice(-120);
       if (rec) rec.rr.push(...rr.map(v => ({ t: Date.now(), v })));
+      hrvVivo();
       dibujar();
     }
+  }
+
+  // HRV en vivo (v0.6). Durante la toma: acumulado desde que empezó, misma limpieza y fórmula que el resultado final.
+  // Antes de empezar: últimos 60 latidos, solo para ver que la señal está estable. Con menos de 30 latidos el número va en gris (provisorio).
+  let ultRr = null;
+  function hrvVivo() {
+    const enToma = !!rec;
+    const base = enToma ? rec.rr : live.slice(-60).map(v => ({ v }));
+    const a = base.length >= 10 ? analizar(base) : null;
+    const prov = !a || a.buenos < 30;
+    const el = $('vHrv');
+    el.textContent = a && a.score != null ? fmt(a.score, 0) : '—';
+    el.className = 'cifra' + (prov ? ' prov' : '');
+    $('vHrvPie').textContent = enToma ? 'HRV score de la toma' + (prov ? ' (calculando)' : '') : 'HRV score, últimos 60 latidos';
+    $('vDet').textContent = 'rMSSD ' + (a && a.rmssd ? fmt(a.rmssd, 1) + ' ms' : '—') + ' · ' + (a ? a.buenos + ' latidos' : '0 latidos') + (a && a.art > 0 ? ' · ' + fmt(a.art, 1) + ' % descartados' : '') + ' · último RR ' + (ultRr ? Math.round(ultRr) + ' ms' : '—');
   }
 
   async function conectar() {
@@ -233,6 +251,7 @@
     $('bIni').disabled = true; $('bCan').disabled = false; $('dur').disabled = true; $('sRes').hidden = true;
     try { wake = await navigator.wakeLock?.request('screen'); } catch (_) { wake = null; }
     estado('Grabando. Quieto y respirando normal.');
+    hrvVivo();
     timer = setInterval(tic, 250); tic();
   }
 
