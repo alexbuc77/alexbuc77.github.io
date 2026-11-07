@@ -44,6 +44,8 @@
   .vivo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
   .cifra { font-family: var(--display); font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; }
   .cifra.prov { color: var(--mute); }
+  .vivo2 { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .cifra2 { font-family: var(--display); font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
   .pie { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
   canvas { display: block; width: 100%; height: 120px; margin-top: 12px; background: var(--field); border: 1px solid var(--line); }
   .res { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 10px; }
@@ -65,7 +67,7 @@
 </head>
 <body>
 <div class="pnl">
-  <div class="top"><b>Captura RR</b><span>v0.6 · prueba en paralelo</span></div>
+  <div class="top"><b>Captura RR</b><span>v0.7 · prueba en paralelo</span></div>
 
   <div id="estado" class="estado">Prendé la banda (mojá los electrodos) y tocá Conectar.</div>
 
@@ -87,6 +89,11 @@
       <div><div class="cifra" id="vHrv">—</div><div class="pie" id="vHrvPie">HRV score</div></div>
       <div><div class="cifra" id="vT">—</div><div class="pie">Restante</div></div>
     </div>
+    <div class="vivo vivo2">
+      <div><div class="cifra2" id="vMin">—</div><div class="pie">FC mínima</div></div>
+      <div><div class="cifra2" id="vMed">—</div><div class="pie">FC media</div></div>
+      <div><div class="cifra2" id="vMax">—</div><div class="pie">FC máxima</div></div>
+    </div>
     <p class="nota" id="vDet" style="margin-top:6px">rMSSD — · último RR —</p>
     <canvas id="cv" aria-label="Tacograma: intervalos RR en vivo"></canvas>
     <div class="fila" style="margin-top:12px">
@@ -102,7 +109,9 @@
       <div><b id="rScore">—</b><span>Score (misma fórmula del registro)</span></div>
       <div><b id="rRmssd">—</b><span>rMSSD (ms)</span></div>
       <div><b id="rLn">—</b><span>ln rMSSD</span></div>
-      <div><b id="rHr">—</b><span>FC mín / media / máx</span></div>
+      <div><b id="rHrMin">—</b><span>FC mínima (lpm)</span></div>
+      <div><b id="rHrProm">—</b><span>FC media (lpm)</span></div>
+      <div><b id="rHrMax">—</b><span>FC máxima (lpm)</span></div>
       <div><b id="rSdnn">—</b><span>SDNN (ms)</span></div>
       <div><b id="rArt">—</b><span>Latidos corregidos</span></div>
     </div>
@@ -141,7 +150,7 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const KEY = 'capturaRR.v1', KKEY = 'capturaRR.clave', VER = 'v0.6';
+  const KEY = 'capturaRR.v1', KKEY = 'capturaRR.clave', VER = 'v0.7';
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -218,6 +227,7 @@
     el.textContent = a && a.score != null ? fmt(a.score, 0) : '—';
     el.className = 'cifra' + (prov ? ' prov' : '');
     $('vHrvPie').textContent = enToma ? 'HRV score de la toma' + (prov ? ' (calculando)' : '') : 'HRV score, últimos 60 latidos';
+    $('vMin').textContent = a ? fmt(a.hrMin) : '—'; $('vMed').textContent = a ? fmt(a.hrProm) : '—'; $('vMax').textContent = a ? fmt(a.hrMax) : '—';
     $('vDet').textContent = 'rMSSD ' + (a && a.rmssd ? fmt(a.rmssd, 1) + ' ms' : '—') + ' · ' + (a ? a.buenos + ' latidos' : '0 latidos') + (a && a.art > 0 ? ' · ' + fmt(a.art, 1) + ' % descartados' : '') + ' · último RR ' + (ultRr ? Math.round(ultRr) + ' ms' : '—');
   }
 
@@ -323,7 +333,7 @@
     $('rScore').textContent = fmt(t.score, 0);
     $('rRmssd').textContent = fmt(t.rmssd, 1);
     $('rLn').textContent = fmt(t.ln, 2);
-    $('rHr').textContent = fmt(t.hrMin) + ' / ' + fmt(t.hrProm) + ' / ' + fmt(t.hrMax);
+    $('rHrMin').textContent = fmt(t.hrMin); $('rHrProm').textContent = fmt(t.hrProm); $('rHrMax').textContent = fmt(t.hrMax);
     $('rSdnn').textContent = fmt(t.sdnn, 1);
     $('rArt').textContent = fmt(t.art, 1) + ' %';
     const v = $('rVer');
