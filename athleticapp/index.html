@@ -34,6 +34,7 @@
   .top b { font-family: 'Fraunces', Georgia, serif; font-size: 20px; color: var(--ink); font-weight: 600; }
   .top button { font-size: 12px; padding: 6px 10px; }
   h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-size: 18px; margin: 0 0 10px; }
+  .hist button.ed { font-size: 12px; padding: 4px 8px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
   label { display: block; font-size: 12px; color: var(--mute); margin-bottom: 4px; }
   input, select { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); color: var(--ink); }
@@ -121,9 +122,20 @@
 
   <!-- Consentimiento (primera vez) -->
   <section id="vCons" class="card hidden">
-    <h2>Antes de empezar</h2>
-    <p class="peq">Athleticapp guarda tus mediciones de variabilidad cardíaca, pulso, peso y notas para calcular tu estado diario. Son datos de salud. Solo vos podés verlos; quien administra la app puede acceder a la base para mantenerla. Podés pedir que se borren en cualquier momento. La app está en prueba: el semáforo orienta el entrenamiento y no reemplaza la opinión de un médico.</p>
-    <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink);margin:12px 0"><input id="cOk" type="checkbox" style="width:auto;margin-top:2px"> Acepto que se guarden y procesen mis datos de salud para este fin.</label>
+    <h2>Consentimiento para tus datos de salud</h2>
+    <p class="peq">Resumen de la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a> (vigente desde el 30-10-2026). La política completa es la que vale.</p>
+    <ul class="peq" style="padding-left:18px;margin:8px 0">
+      <li>Responsable: Lashe Brands SAS, CUIT 30-71958156-7, CABA. Contacto: alex@lashe.ar.</li>
+      <li>Qué se guarda: tu mail, las lecturas de HRV de tu banda, frecuencia cardíaca, peso, minutos y esfuerzo de tus entrenamientos y, si conectás Garmin, resúmenes diarios, sueño, HRV y actividades.</li>
+      <li>Son datos de salud, datos sensibles según la Ley 25.326. Se tratan solo con tu consentimiento expreso.</li>
+      <li>Uso: únicamente mostrarte tu propio panel. No se venden, no se comparten con fines comerciales ni se usan para publicidad.</li>
+      <li>Dónde: en Supabase, cifrados en tránsito y en reposo, posiblemente fuera de Argentina. Cada usuario accede solo a sus datos, con doble factor.</li>
+      <li>Garmin es opcional y lo podés desconectar cuando quieras.</li>
+      <li>Se guardan mientras tu cuenta esté activa. Si pedís el borrado, se eliminan dentro de los 30 días.</li>
+      <li>Podés pedir acceso, rectificación, actualización o supresión escribiendo a alex@lashe.ar. La Agencia de Acceso a la Información Pública atiende reclamos.</li>
+    </ul>
+    <p class="peq">El semáforo orienta el entrenamiento y no reemplaza la opinión de un médico.</p>
+    <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink);margin:12px 0"><input id="cOk" type="checkbox" style="width:auto;margin-top:2px"> Leí la política de privacidad y doy mi consentimiento expreso para que Lashe Brands SAS guarde y trate mis datos de salud con ese fin.</label>
     <button class="pri" id="bCons" disabled style="width:100%">Continuar</button>
   </section>
 
@@ -161,7 +173,8 @@
           <div class="campo"><label for="iRpe">Esfuerzo de ayer (1 a 10)</label><input id="iRpe" type="number" inputmode="numeric" min="1" max="10"></div>
         </div>
         <div class="campo"><label for="iNota">Nota</label><input id="iNota" type="text" placeholder="sueño, alcohol, síntomas…"></div>
-        <button class="pri" type="submit" style="width:100%">Guardar lectura</button>
+        <button class="pri" type="submit" id="bGuardar" style="width:100%">Guardar lectura</button>
+        <button type="button" id="bCancelarEd" class="hidden" style="width:100%;margin-top:8px">Cancelar edición</button>
         <p class="aviso" id="fAviso"></p>
       </form>
     </section>
@@ -176,7 +189,7 @@
     <section class="card">
       <h2>HRV, últimos 30 días</h2>
       <svg id="graf" viewBox="0 0 520 170" role="img" aria-label="HRV de los últimos 30 días con banda de 7 días"></svg>
-      <p class="peq">Línea: tu score diario. Franja: tu banda de 7 días (media ± 1 desvío, mínimo 4 lecturas). Más arriba es mejor.</p>
+      <p class="peq">Línea: tu score diario. Franja: tu banda de 7 días (media ± 1,5 desvíos, mínimo 4 lecturas). Más arriba es mejor.</p>
     </section>
 
     <section class="card">
@@ -184,7 +197,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.3 · 24-10-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.5 · 14-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -193,7 +206,7 @@
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.4';
+  const VER = '0.5'; const CONS_VER = 2;
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -246,10 +259,11 @@
     if (!(await dobleFactor())) return;
     await cargarPerfil();
     ocultarTodo();
-    if (!perfil.consentimiento) { show('vCons', true); return; }
+    if (!perfil.consentimiento || (perfil.consentimiento_version || 1) < CONS_VER) { show('vCons', true); return; }
     show('vApp', true);
     prepararForm();
     await cargarDatos();
+    await prellenarCaptura();
     await estadoGarmin();
   }
 
@@ -295,7 +309,7 @@
   $('bSalir').addEventListener('click', async () => { await sb.auth.signOut(); pantallaLogin(); });
   $('cOk').addEventListener('change', () => { $('bCons').disabled = !$('cOk').checked; });
   $('bCons').addEventListener('click', async () => {
-    perfil = { ...perfil, consentimiento: new Date().toISOString(), consentimiento_version: 1 };
+    perfil = { ...perfil, consentimiento: new Date().toISOString(), consentimiento_version: CONS_VER, consentimiento_texto: 'privacidad 30-10-2026' };
     const ok = await guardarDoc('config', 'perfil', perfil);
     if (ok) arrancar();
   });
@@ -345,11 +359,14 @@
     pintar();
   }
 
-  // ---------- Reglas del semáforo (mismas que el Registro matinal v56) ----------
-  const MIN7 = 4;
+  // ---------- Reglas del semáforo (mismas que el Registro matinal v78) ----------
+  // Banda ±1,5 DE (v70); media de 7 días baja = cociente 7 d / 28 lecturas previas < 0,95 en esta lectura y en la anterior con HRV (v71-v72).
+  const MIN7 = 4, KBANDA = 1.5;
   function v7(i, campo) { const t = tms(datos[i].fecha) - 6 * 864e5; return datos.slice(0, i + 1).filter((d) => tms(d.fecha) >= t && d[campo] != null).map((d) => d[campo]); }
-  function banda(i) { const v = v7(i, 'hrv'); if (v.length < MIN7) return null; const m = media(v), s = de(v); return { m, lo: m - s, hi: m + s, n: v.length }; }
+  function banda(i) { const v = v7(i, 'hrv'); if (v.length < MIN7) return null; const m = media(v), s = de(v); return { m, lo: m - KBANDA * s, hi: m + KBANDA * s, n: v.length }; }
   function previos(i, campo, n) { const v = []; for (let k = i - 1; k >= 0 && v.length < n; k--) if (datos[k][campo] != null) v.push(datos[k][campo]); return v; }
+  function coc1(i) { const h7 = v7(i, 'hrv'), h28 = previos(i, 'hrv', 28); if (h7.length < MIN7 || h28.length < 14) return null; const m28 = media(h28); return m28 > 0 ? media(h7) / m28 : null; }
+  function cocBajo(i) { const c = coc1(i); if (c == null || c >= 0.95) return false; let j = i - 1; while (j >= 0 && datos[j].hrv == null) j--; const c2 = j >= 0 ? coc1(j) : null; return c2 != null && c2 < 0.95; }
   function cargaPorDia() { const c = {}; datos.forEach((d) => { if (d.carga_min != null && d.carga_rpe != null) c[iso(tms(d.fecha) - 864e5)] = d.carga_min * d.carga_rpe; }); return c; }
   function estado(i) {
     const u = datos[i], b = banda(i);
@@ -357,7 +374,7 @@
     const pv = previos(i, 'hr_min', 28).sort((x, y) => x - y), basal = pv.length >= 3 ? pv[Math.floor((pv.length - 1) * 0.25)] : null;
     const bajo = u.hrv < b.lo, alto = u.hrv > b.hi, pulso = u.hr_min != null && basal != null && u.hr_min >= basal + 6;
     const h7 = v7(i, 'hrv'), h28 = previos(i, 'hrv', 28);
-    const m7baja = h7.length >= MIN7 && h28.length >= 14 && media(h7) < media(h28) - de(h28);
+    const m7baja = cocBajo(i);
     // Carga manual (minutos × esfuerzo, Foster 2001). Regla propia: 7 días por encima de 1,3 veces la media semanal de 4 semanas.
     const C = cargaPorDia(), t = tms(u.fecha); let c7 = null, c28 = null, ratio = null;
     const dias28 = []; for (let k = 1; k <= 28; k++) { const v = C[iso(t - k * 864e5)]; if (v != null) dias28.push(k); }
@@ -377,10 +394,10 @@
     const a = SEM.find((x) => x[0] === e.cls);
     const li = (ok, t) => '<li class="' + (ok ? 'si' : 'no') + '">' + t + '</li>';
     let s = '<ul>';
-    s += li(!e.bajo && !e.alto && !e.m7baja, 'HRV ' + e.u.hrv + ': ' + (e.bajo ? 'bajo la banda' : e.alto ? 'sobre la banda (rebote, no habilita carga)' : 'dentro de la banda') + ' (' + fmt(e.b.lo, 1) + ' a ' + fmt(e.b.hi, 1) + ', ' + e.b.n + ' de 7 días)' + (e.m7baja ? '. Media de 7 días ' + fmt(media(e.h7), 1) + ', por debajo de tu rango de 4 semanas' : ''));
+    s += li(!e.bajo && !e.alto && !e.m7baja, 'HRV ' + e.u.hrv + ': ' + (e.bajo ? 'bajo la banda' : e.alto ? 'sobre la banda (rebote, no habilita carga)' : 'dentro de la banda') + ' (' + fmt(e.b.lo, 1) + ' a ' + fmt(e.b.hi, 1) + ', ' + e.b.n + ' de 7 días)' + (e.m7baja ? '. Media de 7 días ' + fmt(media(e.h7), 1) + ', por debajo del 95 % de la media de tus 28 lecturas previas (' + fmt(media(e.h28), 1) + ') por segunda lectura seguida' : ''));
     s += li(!e.pulso, 'FC mínima ' + (e.u.hr_min ?? 'sin dato') + (e.basal != null && e.u.hr_min != null ? ': ' + (e.u.hr_min - e.basal >= 0 ? '+' : '') + fmt(e.u.hr_min - e.basal) + ' contra tu basal de ' + fmt(e.basal) + ' (alerta desde +6)' : e.basal == null ? ' (tu basal aparece con 3 lecturas previas)' : ''));
     s += e.ratio != null ? li(!e.cargaAlta, 'Carga de 7 días ' + fmt(e.c7) + ' contra ' + fmt(e.c28) + ' de media semanal (' + fmt(e.ratio, 2) + ' veces)') : '<li>Carga de entrenamiento: sin dato suficiente (hacen falta 14 días con minutos y esfuerzo cargados en 4 semanas). El estado sale solo de la lectura.</li>';
-    s += '</ul><p class="peq" style="margin:10px 0 0">Orienta en qué días conviene ubicar las sesiones de calidad; no reemplaza tu plan. Rojo: HRV bajo la banda o FC mínima alta. Violeta: las dos a la vez. Amarillo: HRV sobre la banda, media de 7 días baja o carga alta. Base: entrenamiento guiado por HRV (Plews y col. 2013; Granero-Gallegos y col. 2020); los umbrales de carga son regla propia.</p>';
+    s += '</ul><p class="peq" style="margin:10px 0 0">Orienta en qué días conviene ubicar las sesiones de calidad; no reemplaza tu plan. Rojo: HRV bajo la banda o FC mínima alta. Violeta: las dos a la vez. Amarillo: HRV sobre la banda, media de 7 días bajo el 95 % de tus 28 lecturas previas dos lecturas seguidas, o carga alta. Base: entrenamiento guiado por HRV (Plews y col. 2013; Granero-Gallegos y col. 2020); los umbrales de carga son regla propia.</p>';
     box.innerHTML = cab(e.cls, f, a[2], nota) + '<div class="dia ' + e.cls + '">' + s + '</div>';
   }
 
@@ -405,7 +422,9 @@
 
   function pintarHist() {
     const u = datos.slice(-10).reverse();
-    $('hist').innerHTML = u.length ? '<table class="hist"><thead><tr><th>Fecha</th><th>HRV</th><th>FC mín</th><th>Peso</th><th>Fuente</th></tr></thead><tbody>' + u.map((d) => '<tr><td>' + dma(d.fecha) + '</td><td>' + (d.hrv ?? '—') + '</td><td>' + (d.hr_min ?? '—') + '</td><td>' + fmt(d.peso, 1) + '</td><td>' + (d.fuente === 'banda' ? 'banda' : 'manual') + '</td></tr>').join('') + '</tbody></table>' : '<p class="peq">Todavía no hay lecturas.</p>';
+    const fu = (d) => d.fuente === 'banda' || d.fuente_hrv === 'captura' ? 'banda' : d.fuente_hrv === 'elite' || (!d.fuente && d.fecha < '2026-11-08' && d.hrv != null && perfil.cap_corr) ? 'Elite' : 'manual';
+    $('hist').innerHTML = u.length ? '<table class="hist"><thead><tr><th>Fecha</th><th>HRV</th><th>FC mín</th><th>Peso</th><th>Fuente</th><th></th></tr></thead><tbody>' + u.map((d) => '<tr><td>' + dma(d.fecha) + '</td><td>' + (d.hrv ?? '—') + '</td><td>' + (d.hr_min ?? '—') + '</td><td>' + fmt(d.peso, 1) + '</td><td>' + fu(d) + '</td><td><button type="button" class="ed" data-f="' + d.fecha + '">Editar</button></td></tr>').join('') + '</tbody></table>' : '<p class="peq">Todavía no hay lecturas.</p>';
+    $('hist').querySelectorAll('button.ed').forEach((b) => b.addEventListener('click', () => editar(b.dataset.f)));
   }
   function pintar() { pintarResultado(); pintarGrafico(); pintarHist(); }
 
@@ -416,9 +435,35 @@
     $('formAyuda').textContent = elite()
       ? 'Tu fuente oficial es Elite HRV: cargá acá sus valores. La toma con la banda de arriba se guarda aparte, para compararla.'
       : 'Si mediste con la banda, los valores se completan solos. Revisalos, sumá el peso y guardá.';
-    $('betaMed').textContent = elite() ? 'COMPARACIÓN' : 'PRUEBA';
+    $('betaMed').textContent = elite() ? 'COMPARACIÓN' : ''; show('betaMed', elite());
+  }
+  let editando = null;
+  function editar(f) {
+    const d = datos.find((x) => x.fecha === f); if (!d) return;
+    editando = f; const v = (x) => x == null ? '' : x;
+    $('iFecha').value = d.fecha; $('iHora').value = d.hora || ''; $('iHrv').value = v(d.hrv); $('iPeso').value = v(d.peso); $('iMin').value = v(d.hr_min); $('iProm').value = v(d.hr_prom); $('iMax').value = v(d.hr_max); $('iMinEnt').value = v(d.carga_min); $('iRpe').value = v(d.carga_rpe); $('iNota').value = v(d.nota);
+    $('bGuardar').textContent = 'Guardar cambios del ' + dma(f); show('bCancelarEd', true);
+    $('fAviso').textContent = 'Editando la lectura del ' + dma(f) + '.'; $('fAviso').className = 'aviso';
+    $('fLect').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function finEdicion() { editando = null; $('bGuardar').textContent = 'Guardar lectura'; show('bCancelarEd', false); ['iHrv', 'iPeso', 'iMin', 'iProm', 'iMax', 'iMinEnt', 'iRpe', 'iNota'].forEach((i) => $(i).value = ''); prepararForm(); prellenarCaptura(); }
+  // Toma del día hecha con la app Captura RR (llega a captura_rr por la función captura-rr): completa el formulario como en el Registro v74.
+  const corr = () => Number(perfil.cap_corr) || 0;
+  async function prellenarCaptura() {
+    const f = hoy().fecha; if (editando || datos.some((d) => d.fecha === f) || $('iHrv').value) return;
+    const { data, error } = await sb.from('docs').select('id,data').eq('coleccion', 'captura_rr').gte('id', f).lt('id', f + 'U').order('id', { ascending: true });
+    if (error || !data) return;
+    const c = data.map((r) => r.data).find((x) => x && x.valida && x.fecha === f && (x.hora || '') < '11:00'); if (!c) return;
+    llenarDesdeToma(c.fecha, c.hora, c.score, c.fc_min, c.fc_med, c.fc_max, c.art);
+    ultimaToma = { fecha: c.fecha, score: c.score, rmssd: c.rmssd, art: c.art, id: c.fecha + 'T' + (c.hora || '').replace(':', '-') };
+  }
+  function llenarDesdeToma(fecha, hora, score, mn, pr, mx, art) {
+    const hrv = Math.round(score + corr());
+    $('iFecha').value = fecha; $('iHora').value = hora; $('iHrv').value = hrv; $('iMin').value = Math.round(mn); $('iProm').value = Math.round(pr); $('iMax').value = Math.round(mx);
+    $('fAviso').textContent = ($('fAviso').textContent.startsWith('Cambios guardados') ? 'Cambios guardados. ' : '') + 'Completado con la toma de las ' + hora + ': score ' + fmt(score, 1) + (corr() ? ' + ' + fmt(corr(), 1) + ' = ' + hrv : '') + '. Sumá el peso y guardá.'; $('fAviso').className = 'aviso ok';
   }
   const num = (id) => { const v = $(id).value.trim().replace(',', '.'); return v === '' ? null : Number(v); };
+  $('bCancelarEd').addEventListener('click', () => { finEdicion(); $('fAviso').textContent = ''; });
   $('fLect').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fecha = $('iFecha').value, hora = $('iHora').value;
@@ -426,11 +471,12 @@
     if (d.hrv == null && d.peso == null) { alertar('Cargá al menos el HRV o el peso.'); return; }
     if (d.hr_max != null && d.hr_max > 200) { alertar('FC máxima mayor a 200: la lectura no sirve, repetila.'); return; }
     if ((d.carga_min == null) !== (d.carga_rpe == null)) { alertar('Para la carga hacen falta los minutos y el esfuerzo, o ninguno de los dos.'); return; }
-    if (ultimaToma && ultimaToma.fecha === fecha && !elite()) { d.fuente = 'banda'; d.rmssd = ultimaToma.rmssd; d.artefactos = ultimaToma.art; }
+    if (!editando && ultimaToma && ultimaToma.fecha === fecha && !elite()) { d.fuente = 'banda'; d.fuente_hrv = 'captura'; d.rmssd = ultimaToma.rmssd; d.artefactos = ultimaToma.art; d.cap_score = ultimaToma.score && Math.round(ultimaToma.score * 100) / 100; if (ultimaToma.id) d.cap_id = ultimaToma.id; }
     const prev = datos.find((x) => x.fecha === fecha);
-    if (prev) Object.keys(prev).forEach((k) => { if (d[k] == null && prev[k] != null) d[k] = prev[k]; });
+    if (editando && prev) { d.guardado = prev.guardado || d.guardado; d.editado = new Date().toISOString(); }
+    if (prev) Object.keys(prev).forEach((k) => { if (d[k] == null && prev[k] != null && !(editando && ['hrv','peso','hr_min','hr_prom','hr_max','carga_min','carga_rpe','nota'].includes(k))) d[k] = prev[k]; });
     Object.keys(d).forEach((k) => d[k] == null && delete d[k]);
-    if (await guardarDoc('lecturas', fecha, d)) { $('fAviso').textContent = 'Guardada.'; $('fAviso').className = 'aviso ok'; await cargarDatos(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (await guardarDoc('lecturas', fecha, d)) { const fueEd = !!editando; finEdicion(); $('fAviso').textContent = fueEd ? 'Cambios guardados.' : 'Guardada.'; $('fAviso').className = 'aviso ok'; await cargarDatos(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
 
   // ---------- Medición con la banda (misma corrección que Captura RR v0.4) ----------
@@ -481,13 +527,14 @@
     await guardarDoc('captura_rr', fecha + 'T' + hora.replace(':', '-'), cap);
     if (a.valida) {
       ultimaToma = { fecha, ...a };
-      if (!elite()) { $('iFecha').value = fecha; $('iHora').value = hora; $('iHrv').value = Math.round(a.score); $('iMin').value = Math.round(a.hrMin); $('iProm').value = Math.round(a.hrProm); $('iMax').value = Math.round(a.hrMax); $('fAviso').textContent = 'Valores de la banda cargados. Sumá el peso y guardá.'; $('fAviso').className = 'aviso ok'; }
+      ultimaToma.id = fecha + 'T' + hora.replace(':', '-');
+      if (!elite() && !editando) llenarDesdeToma(fecha, hora, a.score, a.hrMin, a.hrProm, a.hrMax, a.art);
     }
   }
 
   sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') pantallaLogin(); });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-  window.__app = { estado: (i) => estado(i), datos: () => datos };
+  window.__app = { estado: (i) => estado(i), datos: () => datos, coc: (i) => coc1(i) };
   arrancar();
 })();
 </script>
