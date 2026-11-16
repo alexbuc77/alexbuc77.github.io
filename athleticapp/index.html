@@ -249,7 +249,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.11 · 16-11-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.12 · 16-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -272,7 +272,7 @@
   if (LANG === 'en') { const ve = document.getElementById('version'); ve.textContent = ve.textContent.replace('versión', 'version'); }
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.11'; const CONS_VER = 3;
+  const VER = '0.12'; const CONS_VER = 3;
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -330,6 +330,10 @@
       if (!local && (meta === 'es' || meta === 'en') && meta !== LANG) { try { localStorage.setItem('idioma', meta); } catch (er) {} location.reload(); return; }
       if (meta !== LANG) sb.auth.updateUser({ data: { idioma: LANG } }).catch(() => {}); }
     $('quien').textContent = usuario.email; show('bSalir', true);
+    // v0.12: si llega con link de invitación o recuperación y todavía no tiene doble factor verificado, primero la contraseña.
+    // Así, si abandona después, ya puede volver a entrar con mail y contraseña.
+    if (pideClave) { const { data: lf } = await sb.auth.mfa.listFactors(); const tieneTotp = ((lf && (lf.totp || lf.all)) || []).some((f) => f.status === 'verified');
+      if (!tieneTotp) { ocultarTodo(); $('cTit').textContent = tipoLink === 'recovery' ? tr('Elegí una contraseña nueva') : tr('Creá tu contraseña'); show('vClave', true); return; } }
     if (!(await dobleFactor())) return;
     if (pideClave) { ocultarTodo(); $('cTit').textContent = tipoLink === 'recovery' ? tr('Elegí una contraseña nueva') : tr('Creá tu contraseña'); show('vClave', true); return; }
     await cargarPerfil();
