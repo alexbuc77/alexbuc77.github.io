@@ -112,7 +112,20 @@
       <div class="campo"><label for="lPass">Contraseña</label><input id="lPass" type="password" autocomplete="current-password" required></div>
       <button class="pri" type="submit" style="width:100%">Entrar</button>
     </form>
+    <button type="button" id="bOlvido" style="width:100%;margin-top:8px">Olvidé mi contraseña</button>
     <p class="aviso" id="lAviso">Por ahora el acceso es por invitación.</p>
+  </section>
+
+  <!-- Crear o cambiar la contraseña (llegada desde el mail de invitación o de recuperación) -->
+  <section id="vClave" class="card hidden">
+    <h2 id="cTit">Creá tu contraseña</h2>
+    <p class="peq">Mínimo 12 caracteres, con al menos una minúscula, una mayúscula, un número y un símbolo.</p>
+    <form id="fClave">
+      <div class="campo"><label for="cPass1">Contraseña nueva</label><input id="cPass1" type="password" autocomplete="new-password" required></div>
+      <div class="campo"><label for="cPass2">Repetila</label><input id="cPass2" type="password" autocomplete="new-password" required></div>
+      <button class="pri" type="submit" style="width:100%">Guardar contraseña</button>
+    </form>
+    <p class="aviso" id="cAviso"></p>
   </section>
 
   <!-- Doble factor: alta -->
@@ -236,7 +249,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.9 · 16-11-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.10 · 16-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -245,7 +258,7 @@
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.9'; const CONS_VER = 3;
+  const VER = '0.10'; const CONS_VER = 3;
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -274,6 +287,9 @@
   }
   function aviso(fin) { campana(fin); decir(fin ? 'Timer finished' : 'Timer started'); }
 
+  // v0.10: links de invitación y de recuperación de contraseña. Se lee el tipo antes de que supabase-js limpie la dirección.
+  const tipoLink = new URLSearchParams(location.hash.slice(1)).get('type') || new URLSearchParams(location.search).get('type');
+  let pideClave = tipoLink === 'invite' || tipoLink === 'recovery';
   const sb = (window.__sbStub || window.supabase).createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   const $ = (id) => document.getElementById(id);
   const show = (id, on) => $(id).classList.toggle('hidden', !on);
@@ -296,6 +312,7 @@
     usuario = data.session.user;
     $('quien').textContent = usuario.email; show('bSalir', true);
     if (!(await dobleFactor())) return;
+    if (pideClave) { ocultarTodo(); $('cTit').textContent = tipoLink === 'recovery' ? 'Elegí una contraseña nueva' : 'Creá tu contraseña'; show('vClave', true); return; }
     await cargarPerfil();
     ocultarTodo();
     if (!perfil.consentimiento || (perfil.consentimiento_version || 1) < CONS_VER) { show('consCambio', !!perfil.consentimiento); show('vCons', true); return; }
@@ -339,7 +356,7 @@
     catch (e) { $('gAviso').textContent = 'No se pudo desconectar: ' + e.message; $('gAviso').className = 'aviso mal'; }
     $('gDes').disabled = false; await estadoGarmin();
   });
-  const ocultarTodo = () => ['vLogin', 'vAlta', 'vCod', 'vCons', 'vApp'].forEach((v) => show(v, false));
+  const ocultarTodo = () => ['vLogin', 'vAlta', 'vCod', 'vCons', 'vApp', 'vClave'].forEach((v) => show(v, false));
   function pantallaLogin() { usuario = null; $('quien').textContent = ''; show('bSalir', false); ocultarTodo(); show('vLogin', true); }
   $('fLogin').addEventListener('submit', async (e) => {
     e.preventDefault(); $('lAviso').textContent = 'Entrando…'; $('lAviso').className = 'aviso';
@@ -348,6 +365,26 @@
     $('lPass').value = ''; arrancar();
   });
   $('bSalir').addEventListener('click', async () => { await sb.auth.signOut(); pantallaLogin(); });
+  $('bOlvido').addEventListener('click', async () => {
+    const m = $('lMail').value.trim();
+    if (!m) { $('lAviso').textContent = 'Escribí tu mail arriba y tocá de nuevo.'; $('lAviso').className = 'aviso mal'; return; }
+    await sb.auth.resetPasswordForEmail(m, { redirectTo: location.origin + location.pathname });
+    // Mismo mensaje exista o no la cuenta: no se revela qué mails están registrados.
+    $('lAviso').textContent = 'Si ese mail tiene cuenta, te llegó un link para elegir una contraseña nueva. Abrilo en este celular.'; $('lAviso').className = 'aviso ok';
+  });
+  $('fClave').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const p1 = $('cPass1').value, p2 = $('cPass2').value, av = $('cAviso');
+    const falta = [p1.length < 12 && '12 caracteres', !/[a-z]/.test(p1) && 'una minúscula', !/[A-Z]/.test(p1) && 'una mayúscula', !/[0-9]/.test(p1) && 'un número', !/[^A-Za-z0-9]/.test(p1) && 'un símbolo'].filter(Boolean);
+    if (falta.length) { av.textContent = 'Le falta: ' + falta.join(', ') + '.'; av.className = 'aviso mal'; return; }
+    if (p1 !== p2) { av.textContent = 'Las dos contraseñas no coinciden.'; av.className = 'aviso mal'; return; }
+    av.textContent = 'Guardando…'; av.className = 'aviso';
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error) { av.textContent = 'No se pudo guardar: ' + (error.message || 'error') + '. Pedí un link nuevo con "Olvidé mi contraseña".'; av.className = 'aviso mal'; return; }
+    $('cPass1').value = ''; $('cPass2').value = ''; pideClave = false;
+    history.replaceState(null, '', location.pathname);
+    av.textContent = ''; arrancar();
+  });
   $('cOk').addEventListener('change', () => { $('bCons').disabled = !$('cOk').checked; });
   $('bCons').addEventListener('click', async () => {
     perfil = { ...perfil, consentimiento: new Date().toISOString(), consentimiento_version: CONS_VER, consentimiento_texto: 'privacidad 15-11-2026' };
@@ -674,7 +711,7 @@
     }
   }
 
-  sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') pantallaLogin(); });
+  sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_OUT') pantallaLogin(); if (ev === 'PASSWORD_RECOVERY') pideClave = true; });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   window.__app = { estado: (i) => estado(i), datos: () => datos, coc: (i) => coc1(i) };
   arrancar();
