@@ -1,6 +1,6 @@
 {
-  "name": "Athleticapp",
-  "short_name": "Athleticapp",
+  "name": "Restbeat",
+  "short_name": "Restbeat",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
