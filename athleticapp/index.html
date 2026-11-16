@@ -102,7 +102,7 @@
 </head>
 <body>
 <div class="app">
-  <div class="top"><b>Athleticapp</b><span id="quien"></span><button id="bSalir" class="hidden">Salir</button></div>
+  <div class="top"><b>Athleticapp</b><span id="quien"></span><select id="selIdioma" aria-label="Idioma" style="width:auto;padding:4px 6px;font-size:12px"><option value="es">ES</option><option value="en">EN</option></select><button id="bSalir" class="hidden">Salir</button></div>
 
   <!-- Inicio de sesión -->
   <section id="vLogin" class="card hidden">
@@ -249,16 +249,30 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.10 · 16-11-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.11 · 16-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (() => {
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
+  // ---------- v0.11: idioma (español / inglés). Se guarda en el teléfono y en la cuenta (los mails salen en ese idioma). ----------
+  const LANG = (() => { try { const v = localStorage.getItem('idioma'); if (v === 'es' || v === 'en') return v; } catch (e) {} return (navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en'; })();
+  const EN = {"Salir": "Sign out", "Entrar": "Sign in", "Mail": "Email", "Contraseña": "Password", "Olvidé mi contraseña": "I forgot my password", "Por ahora el acceso es por invitación.": "Access is by invitation only for now.", "Creá tu contraseña": "Create your password", "Mínimo 12 caracteres, con al menos una minúscula, una mayúscula, un número y un símbolo.": "At least 12 characters, with at least one lowercase letter, one uppercase letter, one number and one symbol.", "Contraseña nueva": "New password", "Repetila": "Repeat it", "Guardar contraseña": "Save password", "Activá el doble factor": "Turn on two-factor authentication", "Es obligatorio para entrar. Escaneá el código con tu app autenticadora (Google Authenticator, Authy o 1Password) y escribí los 6 dígitos que te muestra.": "It is required to sign in. Scan the code with your authenticator app (Google Authenticator, Authy or 1Password) and type the 6 digits it shows.", "Si no podés escanear, cargá esta clave a mano:": "If you can't scan it, enter this key by hand:", "Código de 6 dígitos": "6-digit code", "Confirmar": "Confirm", "Código de seguridad": "Security code", "Abrí tu app autenticadora y escribí el código de Athleticapp.": "Open your authenticator app and type the Athleticapp code.", "Consentimiento para tus datos de salud": "Consent for your health data", "La política cambió el 15-11-2026: ahora dice que el responsable, como administrador de la base, puede acceder a todos los datos, solo para mantener y corregir el servicio. Para seguir usando la app tenés que aceptarla de nuevo.": "The policy changed on November 15, 2026: it now states that the data controller, as database administrator, can access all data, only to maintain and fix the service. To keep using the app you need to accept it again.", "Resumen de la": "Summary of the", "política de privacidad": "privacy policy", "(vigente desde el 15-11-2026). La política completa es la que vale.": "(effective November 15, 2026). The full policy is the one that applies.", "Responsable: Lashe Brands SAS, CUIT 30-71958156-7, CABA. Contacto: alex@lashe.ar.": "Data controller: Lashe Brands SAS, CUIT 30-71958156-7, Buenos Aires, Argentina. Contact: alex@lashe.ar.", "Qué se guarda: tu mail, las lecturas de HRV de tu banda, frecuencia cardíaca, peso, minutos y esfuerzo de tus entrenamientos y, si conectás Garmin, resúmenes diarios, sueño, HRV y actividades.": "What is stored: your email, the HRV readings from your strap, heart rate, weight, training minutes and effort and, if you connect Garmin, daily summaries, sleep, HRV and activities.", "Son datos de salud, datos sensibles según la Ley 25.326. Se tratan solo con tu consentimiento expreso.": "This is health data, sensitive data under Argentine Law 25,326. It is processed only with your express consent.", "Uso: únicamente mostrarte tu propio panel. No se venden, no se comparten con fines comerciales ni se usan para publicidad.": "Use: only to show you your own dashboard. It is not sold, not shared for commercial purposes and not used for advertising.", "Dónde: en Supabase, cifrados en tránsito y en reposo, posiblemente fuera de Argentina. Desde la app, cada usuario accede solo a sus datos, con doble factor. El responsable, como administrador de la base, puede acceder a todos los datos solo para mantener y corregir el servicio.": "Where: on Supabase, encrypted in transit and at rest, possibly outside Argentina. Through the app, each user can access only their own data, with two-factor authentication. The data controller, as database administrator, can access all data only to maintain and fix the service.", "Garmin es opcional y lo podés desconectar cuando quieras.": "Garmin is optional and you can disconnect it at any time.", "Se guardan mientras tu cuenta esté activa. Si pedís el borrado, se eliminan dentro de los 30 días.": "Data is kept while your account is active. If you ask for deletion, it is deleted within 30 days.", "Podés pedir acceso, rectificación, actualización o supresión escribiendo a alex@lashe.ar. La Agencia de Acceso a la Información Pública atiende reclamos.": "You can request access, correction, update or deletion by writing to alex@lashe.ar. Complaints are handled by Argentina's Agency for Access to Public Information.", "El semáforo orienta el entrenamiento y no reemplaza la opinión de un médico.": "The traffic light guides training and does not replace a doctor's advice.", "Leí la política de privacidad y doy mi consentimiento expreso para que Lashe Brands SAS guarde y trate mis datos de salud con ese fin.": "I have read the privacy policy and give my express consent for Lashe Brands SAS to store and process my health data for that purpose.", "Continuar": "Continue", "Medir con la banda": "Measure with the strap", "PRUEBA": "TEST", "Al despertar, después de orinar y pesarte: sentado, 3 minutos quieto, banda puesta y húmeda. La toma dura 2 min 30 s.": "On waking, after peeing and weighing yourself: seated, 3 minutes still, strap on and moistened. The reading takes 2 min 30 s.", "Pulso": "Heart rate", "Último RR (ms)": "Last RR (ms)", "Tiempo": "Time", "Conectar banda": "Connect strap", "Empezar toma": "Start reading", "Cancelar": "Cancel", "Lectura de hoy": "Today's reading", "Fecha": "Date", "Hora": "Time", "HRV (score)": "HRV (score)", "Peso (kg)": "Weight (kg)", "FC mín": "Min HR", "FC prom": "Avg HR", "FC máx": "Max HR", "Entreno de ayer (min)": "Yesterday's training (min)", "Esfuerzo de ayer (1 a 10)": "Yesterday's effort (1 to 10)", "Sesión de ayer": "Yesterday's session", "Gimnasio de ayer": "Yesterday's gym", "Nota": "Note", "Guardar lectura": "Save reading", "Cancelar edición": "Cancel editing", "Revisando la conexión…": "Checking the connection…", "Conectar Garmin": "Connect Garmin", "Desconectar": "Disconnect", "7 días": "7 days", "30 días": "30 days", "3 meses": "3 months", "6 meses": "6 months", "12 meses": "12 months", "HRV, últimos 7 días": "HRV, last 7 days", "Línea: tu score diario. Franja: tu banda de 7 días (media ± 1,5 desvíos, mínimo 4 lecturas). Más arriba es mejor.": "Line: your daily score. Band: your 7-day band (mean ± 1.5 SD, minimum 4 readings). Higher is better.", "Peso": "Weight", "Puntos: pesaje diario. Línea: media de 7 días (mínimo 4 pesajes; un día sin pesaje no cuenta).": "Dots: daily weigh-in. Line: 7-day average (minimum 4 weigh-ins; a day without weighing does not count).", "Déficit estimado por el peso": "Deficit estimated from weight", "(Media de peso de los 7 días que terminan hace 14 días − media de los últimos 7) × 7.700 ÷ 14. Cada media con mínimo 4 pesajes. 7.700 kcal por kg es una aproximación: el agua y la sal mueven el peso de un día para otro, por eso se usan medias.": "(Average weight of the 7 days ending 14 days ago − average of the last 7) × 7,700 ÷ 14. Each average needs at least 4 weigh-ins. 7,700 kcal per kg is an approximation: water and salt move weight from one day to the next, which is why averages are used.", "Sueño": "Sleep", "Horas de sueño por noche, de Garmin (la fecha es el día en que te despertaste). Sin siestas. Fuente: tu reloj Garmin.": "Hours of sleep per night, from Garmin (the date is the day you woke up). Naps excluded. Source: your Garmin watch.", "Últimas lecturas": "Latest readings", "qué corriste ayer": "what you ran yesterday", "qué hiciste en el gimnasio": "what you did at the gym", "sueño, alcohol, síntomas…": "sleep, alcohol, symptoms…", "Período de los gráficos": "Chart period", "HRV con banda de 7 días": "HRV with 7-day band", "Horas de sueño por noche": "Hours of sleep per night", "Idioma": "Language", "Elegí una contraseña nueva": "Choose a new password", "Garmin conectado. Los últimos 30 días llegan en los próximos minutos.": "Garmin connected. The last 30 days will arrive in the next few minutes.", "Cancelaste la conexión en Garmin.": "You cancelled the connection in Garmin.", "No se pudo conectar: ": "Could not connect: ", "error desconocido": "unknown error", "No se pudo leer el estado de Garmin.": "Could not read the Garmin status.", "Conectado desde el ": "Connected since ", ". Los datos llegan solos cuando el reloj sincroniza con Garmin Connect.": ". Data arrives automatically when the watch syncs with Garmin Connect.", "Sin conectar. Al conectar, Garmin te pide permiso y vuelve acá.": "Not connected. When you connect, Garmin asks for your permission and brings you back here.", "Volver a conectar": "Reconnect", "Abriendo Garmin…": "Opening Garmin…", "No se pudo iniciar: ": "Could not start: ", "Garmin desconectado. Los datos ya guardados quedan en tu cuenta.": "Garmin disconnected. Data already saved stays in your account.", "No se pudo desconectar: ": "Could not disconnect: ", "Entrando…": "Signing in…", "No se pudo entrar: revisá el mail y la contraseña.": "Could not sign in: check your email and password.", "Escribí tu mail arriba y tocá de nuevo.": "Type your email above and tap again.", "Si ese mail tiene cuenta, te llegó un link para elegir una contraseña nueva. Abrilo en este celular.": "If that email has an account, you received a link to choose a new password. Open it on this phone.", "12 caracteres": "12 characters", "una minúscula": "a lowercase letter", "una mayúscula": "an uppercase letter", "un número": "a number", "un símbolo": "a symbol", "Le falta: ": "Missing: ", "Las dos contraseñas no coinciden.": "The two passwords don't match.", "Guardando…": "Saving…", "No se pudo guardar: ": "Could not save: ", ". Pedí un link nuevo con \"Olvidé mi contraseña\".": ". Request a new link with \"I forgot my password\".", "No se pudo iniciar el alta: ": "Could not start setup: ", "<img alt=\"Código QR para la app autenticadora\" style=\"width:200px;height:200px;display:block\" src=\"": "<img alt=\"QR code for the authenticator app\" style=\"width:200px;height:200px;display:block\" src=\"", "Son 6 dígitos.": "It's 6 digits.", "Verificando…": "Verifying…", "Código incorrecto o vencido. Probá con el siguiente.": "Wrong or expired code. Try the next one.", "No se pudieron leer tus lecturas: ": "Could not read your readings: ", "La última lectura no tiene HRV.": "The last reading has no HRV.", "Datos insuficientes (": "Not enough data (", " de 7). Hacen falta al menos 4 lecturas en los últimos 7 días.": " of 7). At least 4 readings in the last 7 days are needed.", "Óptimo / Carga": "Optimal / Load", "Carga": "Load", "Entreno fácil zona 2": "Easy zone 2 training", "Fácil Z2": "Easy Z2", "Día de descanso": "Rest day", "Descanso": "Rest", "Te estás por enfermar o tomaste alcohol anoche": "You may be getting sick or drank alcohol last night", "Alerta": "Alert", "\"><span class=\"et\">Resultado de la lectura del ": "\"><span class=\"et\">Result of the reading of ", "Sin estado todavía": "No status yet", "Cargá tu primera lectura. El semáforo necesita al menos 4 lecturas en 7 días.": "Log your first reading. The traffic light needs at least 4 readings in 7 days.", "Todavía no cargaste la lectura de hoy: este es el estado de tu última lectura.": "You haven't logged today's reading yet: this is the status of your last reading.", "Sin estado": "No status", "bajo la banda": "below the band", "sobre la banda (rebote, no habilita carga)": "above the band (rebound, not a green light for load)", "dentro de la banda": "within the band", "HRV ": "HRV ", " de 7 días)": " of 7 days)", ". Media de 7 días ": ". 7-day average ", ", por debajo del 95 % de la media de tus 28 lecturas previas (": ", below 95% of the average of your previous 28 readings (", ") por segunda lectura seguida": ") for the second reading in a row", "FC mínima ": "Minimum HR ", "sin dato": "no data", " contra tu basal de ": " vs your baseline of ", " (alerta desde +6)": " (alert from +6)", " (tu basal aparece con 3 lecturas previas)": " (your baseline appears after 3 previous readings)", "Carga de 7 días ": "7-day load ", " contra ": " vs ", " de media semanal (": " weekly average (", " veces)": " times)", "<li>Carga de entrenamiento: sin dato suficiente (hacen falta 14 días con minutos y esfuerzo cargados en 4 semanas). El estado sale solo de la lectura.</li>": "<li>Training load: not enough data (14 days with minutes and effort logged in 4 weeks are needed). The status comes only from the reading.</li>", "</ul><p class=\"peq\" style=\"margin:10px 0 0\">Orienta en qué días conviene ubicar las sesiones de calidad; no reemplaza tu plan. Rojo: HRV bajo la banda o FC mínima alta. Violeta: las dos a la vez. Amarillo: HRV sobre la banda, media de 7 días bajo el 95 % de tus 28 lecturas previas dos lecturas seguidas, o carga alta. Base: entrenamiento guiado por HRV (Plews y col. 2013; Granero-Gallegos y col. 2020); los umbrales de carga son regla propia.</p>": "</ul><p class=\"peq\" style=\"margin:10px 0 0\">It shows which days suit quality sessions; it does not replace your plan. Red: HRV below the band or high minimum HR. Purple: both at once. Yellow: HRV above the band, 7-day average below 95% of your previous 28 readings two readings in a row, or high load. Basis: HRV-guided training (Plews et al. 2013; Granero-Gallegos et al. 2020); the load thresholds are our own rule.</p>", "\" text-anchor=\"middle\" font-size=\"14\" fill=\"var(--mute)\">Aparece con 2 lecturas o más</text>": "\" text-anchor=\"middle\" font-size=\"14\" fill=\"var(--mute)\">Shows up with 2 or more readings</text>", "\" text-anchor=\"end\" font-size=\"11\" font-weight=\"700\" fill=\"var(--ok)\">↑ más arriba es mejor</text>": "\" text-anchor=\"end\" font-size=\"11\" font-weight=\"700\" fill=\"var(--ok)\">↑ higher is better</text>", "<table class=\"hist\"><thead><tr><th>Fecha</th><th>HRV</th><th>FC mín</th><th>Peso</th><th>Fuente</th><th></th></tr></thead><tbody>": "<table class=\"hist\"><thead><tr><th>Date</th><th>HRV</th><th>Min HR</th><th>Weight</th><th>Source</th><th></th></tr></thead><tbody>", "\">Editar</button></td></tr>": "\">Edit</button></td></tr>", "<p class=\"peq\">Todavía no hay lecturas.</p>": "<p class=\"peq\">No readings yet.</p>", "Sin datos": "No data", "Sin pesajes en el período": "No weigh-ins in this period", "últimos 7 días": "last 7 days", "últimos 30 días": "last 30 days", "últimos 3 meses": "last 3 months", "últimos 6 meses": "last 6 months", "últimos 12 meses": "last 12 months", ": media 7 días ": ": 7-day average ", " de 7)": " of 7)", " kg<small>media de 7 días (": " kg<small>7-day average (", " de 7)</small>": " of 7)</small>", " kg<small>último pesaje ": " kg<small>last weigh-in ", "; media de 7 días: datos insuficientes</small>": "; 7-day average: not enough data</small>", "Puntos: pesaje diario. ": "Dots: daily weigh-in. ", "Línea: media de 7 días (mínimo 4 pesajes; un día sin pesaje no cuenta).": "Line: 7-day average (minimum 4 weigh-ins; a day without weighing does not count).", " Semana anterior: ": " Previous week: ", " de 7). Cambio: ": " of 7). Change: ", " Te faltan ": " You are ", " kg para el objetivo de ": " kg away from the goal of ", "objetivo ": "goal ", "déficit ": "deficit ", "superávit ": "surplus ", " kcal/día": " kcal/day", "Hacen falta 3 semanas de pesajes": "3 weeks of weigh-ins are needed", " kcal<small>": " kcal<small>", "déficit por día": "deficit per day", "comido de más por día": "eaten above needs per day", "—<small>datos insuficientes</small>": "—<small>not enough data</small>", "Media de los últimos 7 días: ": "Average of the last 7 days: ", " de 7). Dos semanas antes: ": " of 7). Two weeks earlier: ", " kcal/día. 7.700 kcal por kg es una aproximación: el agua y la sal mueven el peso de un día para otro, por eso se usan medias.": " kcal/day. 7,700 kcal per kg is an approximation: water and salt move weight from one day to the next, which is why averages are used.", "(Media de peso de los 7 días que terminan hace 14 días − media de los últimos 7) × 7.700 ÷ 14, cada media con mínimo 4 pesajes. Hacen falta 3 semanas de pesajes.": "(Average weight of the 7 days ending 14 days ago − average of the last 7) × 7,700 ÷ 14, each average with at least 4 weigh-ins. 3 weeks of weigh-ins are needed.", " · puntaje ": " · score ", " · siesta ": " · nap ", "Semana del ": "Week of ", " por noche (": " per night (", ": media ": ": average ", "Sin noches en el período": "No nights in this period", "anoche": "last night", "noche al ": "night ending ", "Media de 7 noches: ": "7-night average: ", " de 7). Noches bajo 6 h en la última semana: ": " of 7). Nights under 6 h in the last week: ", "Media de 7 noches: datos insuficientes. ": "7-night average: not enough data. ", "Barras: media por noche de cada semana de lunes a domingo (mínimo 4 noches). ": "Bars: average per night for each Monday-to-Sunday week (minimum 4 nights). ", "Barras: horas por noche de Garmin (la fecha es el día en que te despertaste). ": "Bars: hours per night from Garmin (the date is the day you woke up). ", "Sin siestas. Línea punteada: 7 h, el mínimo recomendado para adultos (Watson y col. 2015, consenso AASM/SRS).": "Naps excluded. Dashed line: 7 h, the recommended minimum for adults (Watson et al. 2015, AASM/SRS consensus).", "HRV, ": "HRV, ", "Tu fuente oficial es Elite HRV: cargá acá sus valores. La toma con la banda de arriba se guarda aparte, para compararla.": "Your official source is Elite HRV: enter its values here. The strap reading above is saved separately, for comparison.", "Si mediste con la banda, los valores se completan solos. Revisalos, sumá el peso y guardá.": "If you measured with the strap, the values fill in automatically. Check them, add your weight and save.", "COMPARACIÓN": "COMPARISON", "Guardar cambios del ": "Save changes for ", "Editando la lectura del ": "Editing the reading of ", " km en ": " km in ", "Carrera": "Run", "Entreno del ": "Training on ", " traído de Garmin (": " imported from Garmin (", " sesión": " session", " sesiones": " sessions", "). El esfuerzo es el que marcaste en el reloj": "). The effort is the one you entered on the watch", "; en alguna sesión no está cargado: completalo": "; it is missing for some session: fill it in", ". Revisalo y corregí si hace falta.": ". Check it and correct it if needed.", "Cambios guardados": "Changes saved", "Cambios guardados. ": "Changes saved. ", "Cambios guardados.": "Changes saved.", "Guardada.": "Saved.", "Completado con la toma de las ": "Filled in with the reading taken at ", ": score ": ": score ", ". Sumá el peso y guardá.": ". Add your weight and save.", "Cargá al menos el HRV o el peso.": "Enter at least the HRV or the weight.", "FC máxima mayor a 200: la lectura no sirve, repetila.": "Max HR above 200: the reading is not valid, repeat it.", "Para la carga hacen falta los minutos y el esfuerzo, o ninguno de los dos.": "For training load you need both minutes and effort, or neither.", "Este navegador no tiene Bluetooth web. Usá Chrome en Android o en la compu. En iPhone todavía no funciona.": "This browser has no Web Bluetooth. Use Chrome on Android or on a computer. It doesn't work on iPhone yet.", "Se cortó la conexión en medio de la toma. Repetila.": "The connection dropped during the reading. Repeat it.", "Banda desconectada.": "Strap disconnected.", "Conectando…": "Connecting…", "Conectada: ": "Connected: ", ". Esperá unos segundos quieto y tocá Empezar toma.": ". Stay still for a few seconds and tap Start reading.", "No elegiste ninguna banda.": "You didn't choose a strap.", ". Si otra app está conectada a la banda, cerrala.": ". If another app is connected to the strap, close it.", "Grabando. Quieto y respirando normal.": "Recording. Stay still and breathe normally.", "Toma cancelada.": "Reading cancelled.", "pocos latidos registrados (": "too few beats recorded (", "latidos descartados ": "discarded beats ", " % (tope 5 %)": " % (limit 5 %)", "FC máx ": "Max HR ", " (tope 200)": " (limit 200)", "La toma no sirve: ": "The reading is not valid: ", ". Repetila.": ". Repeat it.", "Toma válida: score ": "Valid reading: score ", ", rMSSD ": ", rMSSD ", ", descartados ": ", discarded ", "banda": "strap", "manual": "manual", "Elite": "Elite", " de 7). (": " of 7). (", ") × 7.700 ÷ 14 = ": ") × 7,700 ÷ 14 = ", " a ": " to "};
+  const tr = (s) => (LANG === 'en' && EN[s] != null ? EN[s] : s);
+  function traducirDOM(root) {
+    document.documentElement.lang = LANG;
+    if (LANG !== 'en') return;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+    while ((n = w.nextNode())) { const v = n.nodeValue, k = v.trim(); if (k && EN[k] != null) n.nodeValue = v.replace(k, EN[k]); }
+    root.querySelectorAll('[placeholder],[aria-label],[title],[alt]').forEach((el) => ['placeholder', 'aria-label', 'title', 'alt'].forEach((a) => { const v = el.getAttribute(a); if (v && EN[v] != null) el.setAttribute(a, EN[v]); }));
+  }
+  traducirDOM(document.body);
+  document.getElementById('selIdioma').value = LANG;
+  if (LANG === 'en') { const ve = document.getElementById('version'); ve.textContent = ve.textContent.replace('versión', 'version'); }
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.10'; const CONS_VER = 3;
+  const VER = '0.11'; const CONS_VER = 3;
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -293,11 +307,12 @@
   const sb = (window.__sbStub || window.supabase).createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
   const $ = (id) => document.getElementById(id);
   const show = (id, on) => $(id).classList.toggle('hidden', !on);
-  const fmt = (n, d = 0) => n == null || !isFinite(n) ? '—' : Number(n).toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmt = (n, d = 0) => n == null || !isFinite(n) ? '—' : Number(n).toLocaleString(LANG === 'en' ? 'en-US' : 'es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const p2 = (x) => String(x).padStart(2, '0');
   const hoy = () => { const d = new Date(); return { fecha: d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()), hora: p2(d.getHours()) + ':' + p2(d.getMinutes()) }; };
-  const dma = (f) => f.slice(8, 10) + '/' + f.slice(5, 7) + '/' + f.slice(0, 4);
+  const dm = (f) => LANG === 'en' ? f.slice(5, 7) + '/' + f.slice(8, 10) : f.slice(8, 10) + '/' + f.slice(5, 7);
+  const dma = (f) => LANG === 'en' ? f.slice(5, 7) + '/' + f.slice(8, 10) + '/' + f.slice(0, 4) : f.slice(8, 10) + '/' + f.slice(5, 7) + '/' + f.slice(0, 4);
   const tms = (f) => Date.UTC(+f.slice(0, 4), +f.slice(5, 7) - 1, +f.slice(8, 10));
   const iso = (t) => new Date(t).toISOString().slice(0, 10);
   const media = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
@@ -310,9 +325,13 @@
     const { data } = await sb.auth.getSession();
     if (!data.session) return pantallaLogin();
     usuario = data.session.user;
+    // Idioma de la cuenta: si el teléfono no eligió uno, se usa el de la cuenta; si la cuenta no tiene, se guarda el del teléfono (para los mails).
+    { const meta = (usuario.user_metadata || {}).idioma; let local = null; try { local = localStorage.getItem('idioma'); } catch (er) {}
+      if (!local && (meta === 'es' || meta === 'en') && meta !== LANG) { try { localStorage.setItem('idioma', meta); } catch (er) {} location.reload(); return; }
+      if (meta !== LANG) sb.auth.updateUser({ data: { idioma: LANG } }).catch(() => {}); }
     $('quien').textContent = usuario.email; show('bSalir', true);
     if (!(await dobleFactor())) return;
-    if (pideClave) { ocultarTodo(); $('cTit').textContent = tipoLink === 'recovery' ? 'Elegí una contraseña nueva' : 'Creá tu contraseña'; show('vClave', true); return; }
+    if (pideClave) { ocultarTodo(); $('cTit').textContent = tipoLink === 'recovery' ? tr('Elegí una contraseña nueva') : tr('Creá tu contraseña'); show('vClave', true); return; }
     await cargarPerfil();
     ocultarTodo();
     if (!perfil.consentimiento || (perfil.consentimiento_version || 1) < CONS_VER) { show('consCambio', !!perfil.consentimiento); show('vCons', true); return; }
@@ -326,18 +345,18 @@
   }
 
   // ---------- Garmin (API oficial) ----------
-  const fh = (t) => t ? new Date(t).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
+  const fh = (t) => t ? new Date(t).toLocaleString(LANG === 'en' ? 'en-US' : 'es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
   async function estadoGarmin() {
     const q = new URLSearchParams(location.search), vuelta = q.get('garmin');
     if (vuelta) {
-      $('gAviso').textContent = vuelta === 'ok' ? 'Garmin conectado. Los últimos 30 días llegan en los próximos minutos.' : vuelta === 'cancelado' ? 'Cancelaste la conexión en Garmin.' : 'No se pudo conectar: ' + (q.get('det') || 'error desconocido') + '.';
+      $('gAviso').textContent = vuelta === 'ok' ? tr('Garmin conectado. Los últimos 30 días llegan en los próximos minutos.') : vuelta === 'cancelado' ? tr('Cancelaste la conexión en Garmin.') : tr('No se pudo conectar: ') + (q.get('det') || tr('error desconocido')) + '.';
       $('gAviso').className = 'aviso' + (vuelta === 'ok' ? '' : ' mal');
       history.replaceState(null, '', location.pathname);
     }
     const { data, error } = await sb.rpc('garmin_estado');
     const c = !error && data && data[0];
-    $('gEstado').textContent = error ? 'No se pudo leer el estado de Garmin.' : c ? 'Conectado desde el ' + fh(c.conectado) + '. Los datos llegan solos cuando el reloj sincroniza con Garmin Connect.' : 'Sin conectar. Al conectar, Garmin te pide permiso y vuelve acá.';
-    $('gCon').disabled = false; $('gCon').textContent = c ? 'Volver a conectar' : 'Conectar Garmin';
+    $('gEstado').textContent = error ? tr('No se pudo leer el estado de Garmin.') : c ? tr('Conectado desde el ') + fh(c.conectado) + tr('. Los datos llegan solos cuando el reloj sincroniza con Garmin Connect.') : tr('Sin conectar. Al conectar, Garmin te pide permiso y vuelve acá.');
+    $('gCon').disabled = false; $('gCon').textContent = c ? tr('Volver a conectar') : tr('Conectar Garmin');
     show('gDes', !!c);
   }
   async function llamarGarmin(accion) {
@@ -346,41 +365,46 @@
     return data;
   }
   $('gCon').addEventListener('click', async () => {
-    $('gCon').disabled = true; $('gAviso').textContent = 'Abriendo Garmin…'; $('gAviso').className = 'aviso';
+    $('gCon').disabled = true; $('gAviso').textContent = tr('Abriendo Garmin…'); $('gAviso').className = 'aviso';
     try { const d = await llamarGarmin('conectar'); location.href = d.url; }
-    catch (e) { $('gAviso').textContent = 'No se pudo iniciar: ' + e.message; $('gAviso').className = 'aviso mal'; $('gCon').disabled = false; }
+    catch (e) { $('gAviso').textContent = tr('No se pudo iniciar: ') + e.message; $('gAviso').className = 'aviso mal'; $('gCon').disabled = false; }
   });
   $('gDes').addEventListener('click', async () => {
     $('gDes').disabled = true;
-    try { await llamarGarmin('desconectar'); $('gAviso').textContent = 'Garmin desconectado. Los datos ya guardados quedan en tu cuenta.'; $('gAviso').className = 'aviso'; }
-    catch (e) { $('gAviso').textContent = 'No se pudo desconectar: ' + e.message; $('gAviso').className = 'aviso mal'; }
+    try { await llamarGarmin('desconectar'); $('gAviso').textContent = tr('Garmin desconectado. Los datos ya guardados quedan en tu cuenta.'); $('gAviso').className = 'aviso'; }
+    catch (e) { $('gAviso').textContent = tr('No se pudo desconectar: ') + e.message; $('gAviso').className = 'aviso mal'; }
     $('gDes').disabled = false; await estadoGarmin();
   });
   const ocultarTodo = () => ['vLogin', 'vAlta', 'vCod', 'vCons', 'vApp', 'vClave'].forEach((v) => show(v, false));
   function pantallaLogin() { usuario = null; $('quien').textContent = ''; show('bSalir', false); ocultarTodo(); show('vLogin', true); }
   $('fLogin').addEventListener('submit', async (e) => {
-    e.preventDefault(); $('lAviso').textContent = 'Entrando…'; $('lAviso').className = 'aviso';
+    e.preventDefault(); $('lAviso').textContent = tr('Entrando…'); $('lAviso').className = 'aviso';
     const { error } = await sb.auth.signInWithPassword({ email: $('lMail').value.trim(), password: $('lPass').value });
-    if (error) { $('lAviso').textContent = 'No se pudo entrar: revisá el mail y la contraseña.'; $('lAviso').className = 'aviso mal'; return; }
+    if (error) { $('lAviso').textContent = tr('No se pudo entrar: revisá el mail y la contraseña.'); $('lAviso').className = 'aviso mal'; return; }
     $('lPass').value = ''; arrancar();
   });
   $('bSalir').addEventListener('click', async () => { await sb.auth.signOut(); pantallaLogin(); });
+  $('selIdioma').addEventListener('change', async (e) => {
+    const v = e.target.value; try { localStorage.setItem('idioma', v); } catch (er) {}
+    if (usuario) { try { await sb.auth.updateUser({ data: { idioma: v } }); } catch (er) {} }
+    location.reload();
+  });
   $('bOlvido').addEventListener('click', async () => {
     const m = $('lMail').value.trim();
-    if (!m) { $('lAviso').textContent = 'Escribí tu mail arriba y tocá de nuevo.'; $('lAviso').className = 'aviso mal'; return; }
+    if (!m) { $('lAviso').textContent = tr('Escribí tu mail arriba y tocá de nuevo.'); $('lAviso').className = 'aviso mal'; return; }
     await sb.auth.resetPasswordForEmail(m, { redirectTo: location.origin + location.pathname });
     // Mismo mensaje exista o no la cuenta: no se revela qué mails están registrados.
-    $('lAviso').textContent = 'Si ese mail tiene cuenta, te llegó un link para elegir una contraseña nueva. Abrilo en este celular.'; $('lAviso').className = 'aviso ok';
+    $('lAviso').textContent = tr('Si ese mail tiene cuenta, te llegó un link para elegir una contraseña nueva. Abrilo en este celular.'); $('lAviso').className = 'aviso ok';
   });
   $('fClave').addEventListener('submit', async (e) => {
     e.preventDefault();
     const p1 = $('cPass1').value, p2 = $('cPass2').value, av = $('cAviso');
-    const falta = [p1.length < 12 && '12 caracteres', !/[a-z]/.test(p1) && 'una minúscula', !/[A-Z]/.test(p1) && 'una mayúscula', !/[0-9]/.test(p1) && 'un número', !/[^A-Za-z0-9]/.test(p1) && 'un símbolo'].filter(Boolean);
-    if (falta.length) { av.textContent = 'Le falta: ' + falta.join(', ') + '.'; av.className = 'aviso mal'; return; }
-    if (p1 !== p2) { av.textContent = 'Las dos contraseñas no coinciden.'; av.className = 'aviso mal'; return; }
-    av.textContent = 'Guardando…'; av.className = 'aviso';
+    const falta = [p1.length < 12 && tr('12 caracteres'), !/[a-z]/.test(p1) && tr('una minúscula'), !/[A-Z]/.test(p1) && tr('una mayúscula'), !/[0-9]/.test(p1) && tr('un número'), !/[^A-Za-z0-9]/.test(p1) && tr('un símbolo')].filter(Boolean);
+    if (falta.length) { av.textContent = tr('Le falta: ') + falta.join(', ') + '.'; av.className = 'aviso mal'; return; }
+    if (p1 !== p2) { av.textContent = tr('Las dos contraseñas no coinciden.'); av.className = 'aviso mal'; return; }
+    av.textContent = tr('Guardando…'); av.className = 'aviso';
     const { error } = await sb.auth.updateUser({ password: p1 });
-    if (error) { av.textContent = 'No se pudo guardar: ' + (error.message || 'error') + '. Pedí un link nuevo con "Olvidé mi contraseña".'; av.className = 'aviso mal'; return; }
+    if (error) { av.textContent = tr('No se pudo guardar: ') + (error.message || 'error') + tr('. Pedí un link nuevo con "Olvidé mi contraseña".'); av.className = 'aviso mal'; return; }
     $('cPass1').value = ''; $('cPass2').value = ''; pideClave = false;
     history.replaceState(null, '', location.pathname);
     av.textContent = ''; arrancar();
@@ -403,16 +427,16 @@
     if (verif.length) { factorId = verif[0].id; show('vCod', true); $('cCod').value = ''; $('cCod').focus(); return false; }
     for (const f of todos.filter((f) => f.status !== 'verified')) await sb.auth.mfa.unenroll({ factorId: f.id });
     const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Athleticapp' });
-    if (error) { show('vAlta', true); $('aAviso').textContent = 'No se pudo iniciar el alta: ' + error.message; $('aAviso').className = 'aviso mal'; return false; }
-    factorId = data.id; $('qr').innerHTML = '<img alt="Código QR para la app autenticadora" style="width:200px;height:200px;display:block" src="' + data.totp.qr_code + '">'; $('secreto').textContent = data.totp.secret;
+    if (error) { show('vAlta', true); $('aAviso').textContent = tr('No se pudo iniciar el alta: ') + error.message; $('aAviso').className = 'aviso mal'; return false; }
+    factorId = data.id; $('qr').innerHTML = tr('<img alt="Código QR para la app autenticadora" style="width:200px;height:200px;display:block" src="') + data.totp.qr_code + '">'; $('secreto').textContent = data.totp.secret;
     show('vAlta', true); return false;
   }
   async function verificar(inp, av) {
     const code = $(inp).value.replace(/\D/g, '');
-    if (code.length !== 6) { $(av).textContent = 'Son 6 dígitos.'; $(av).className = 'aviso mal'; return; }
-    $(av).textContent = 'Verificando…'; $(av).className = 'aviso';
+    if (code.length !== 6) { $(av).textContent = tr('Son 6 dígitos.'); $(av).className = 'aviso mal'; return; }
+    $(av).textContent = tr('Verificando…'); $(av).className = 'aviso';
     const { error } = await sb.auth.mfa.challengeAndVerify({ factorId, code });
-    if (error) { $(av).textContent = 'Código incorrecto o vencido. Probá con el siguiente.'; $(av).className = 'aviso mal'; return; }
+    if (error) { $(av).textContent = tr('Código incorrecto o vencido. Probá con el siguiente.'); $(av).className = 'aviso mal'; return; }
     arrancar();
   }
   $('bAlta').addEventListener('click', () => verificar('aCod', 'aAviso'));
@@ -422,7 +446,7 @@
   // ---------- Datos ----------
   async function guardarDoc(coleccion, id, data) {
     const { error } = await sb.from('docs').upsert({ usuario: usuario.id, coleccion, id, data, actualizado: new Date().toISOString() }, { onConflict: 'usuario,coleccion,id' });
-    if (error) { alertar('No se pudo guardar: ' + error.message); return false; }
+    if (error) { alertar(tr('No se pudo guardar: ') + error.message); return false; }
     return true;
   }
   function alertar(t) { const el = $('fAviso'); el.textContent = t; el.className = 'aviso mal'; }
@@ -432,7 +456,7 @@
   }
   async function cargarDatos() {
     const { data, error } = await sb.from('docs').select('id,data').eq('coleccion', 'lecturas').order('id', { ascending: true });
-    if (error) { alertar('No se pudieron leer tus lecturas: ' + error.message); return; }
+    if (error) { alertar(tr('No se pudieron leer tus lecturas: ') + error.message); return; }
     datos = (data || []).map((r) => r.data).filter((d) => d && d.fecha).sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
     pintar();
   }
@@ -448,7 +472,7 @@
   function cargaPorDia() { const c = {}; datos.forEach((d) => { if (d.carga_min != null && d.carga_rpe != null) c[iso(tms(d.fecha) - 864e5)] = d.carga_min * d.carga_rpe; }); return c; }
   function estado(i) {
     const u = datos[i], b = banda(i);
-    if (u.hrv == null || !b) return { sin: u.hrv == null ? 'La última lectura no tiene HRV.' : 'Datos insuficientes (' + v7(i, 'hrv').length + ' de 7). Hacen falta al menos 4 lecturas en los últimos 7 días.' };
+    if (u.hrv == null || !b) return { sin: u.hrv == null ? tr('La última lectura no tiene HRV.') : tr('Datos insuficientes (') + v7(i, 'hrv').length + tr(' de 7). Hacen falta al menos 4 lecturas en los últimos 7 días.') };
     const pv = previos(i, 'hr_min', 28).sort((x, y) => x - y), basal = pv.length >= 3 ? pv[Math.floor((pv.length - 1) * 0.25)] : null;
     const bajo = u.hrv < b.lo, alto = u.hrv > b.hi, pulso = u.hr_min != null && basal != null && u.hr_min >= basal + 6;
     const h7 = v7(i, 'hrv'), h28 = previos(i, 'hrv', 28);
@@ -461,21 +485,21 @@
     const cls = bajo && pulso ? 'obligado' : (bajo || pulso) ? 'optativo' : (alto || cargaAlta || m7baja) ? 'facil' : 'optimo';
     return { cls, u, b, basal, bajo, alto, pulso, m7baja, h7, h28, c7, c28, ratio, cargaAlta };
   }
-  const SEM = [['optimo', 's-ver', 'Óptimo / Carga', 'Carga'], ['facil', 's-ama', 'Entreno fácil zona 2', 'Fácil Z2'], ['optativo', 's-roj', 'Día de descanso', 'Descanso'], ['obligado', 's-vio', 'Te estás por enfermar o tomaste alcohol anoche', 'Alerta']];
+  const SEM = [['optimo', 's-ver', tr('Óptimo / Carga'), tr('Carga')], ['facil', 's-ama', tr('Entreno fácil zona 2'), tr('Fácil Z2')], ['optativo', 's-roj', tr('Día de descanso'), tr('Descanso')], ['obligado', 's-vio', tr('Te estás por enfermar o tomaste alcohol anoche'), tr('Alerta')]];
 
   function pintarResultado() {
     const box = $('resultado'), n = datos.length;
-    const cab = (cls, fecha, est, nota, solo) => '<div class="sem ' + (cls || '') + (solo ? ' solo' : '') + '"><span class="et">Resultado de la lectura del ' + (fecha ? dma(fecha) : '—') + '</span><span class="est">' + est + '</span><div class="seg">' + SEM.map((x) => '<div class="' + x[1] + (x[0] === cls ? ' on' : '') + '"></div>').join('') + '</div><div class="segl">' + SEM.map((x) => '<span' + (x[0] === cls ? ' class="on"' : '') + '>' + x[3] + '</span>').join('') + '</div>' + (nota ? '<p>' + nota + '</p>' : '') + '</div>';
-    if (!n) { box.innerHTML = cab('', null, 'Sin estado todavía', 'Cargá tu primera lectura. El semáforo necesita al menos 4 lecturas en 7 días.', true); return; }
-    const e = estado(n - 1), f = datos[n - 1].fecha, nota = f !== hoy().fecha ? 'Todavía no cargaste la lectura de hoy: este es el estado de tu última lectura.' : '';
-    if (e.sin) { box.innerHTML = cab('', f, 'Sin estado', e.sin + (nota ? ' ' + nota : ''), true); return; }
+    const cab = (cls, fecha, est, nota, solo) => '<div class="sem ' + (cls || '') + (solo ? ' solo' : '') + tr('"><span class="et">Resultado de la lectura del ') + (fecha ? dma(fecha) : '—') + '</span><span class="est">' + est + '</span><div class="seg">' + SEM.map((x) => '<div class="' + x[1] + (x[0] === cls ? ' on' : '') + '"></div>').join('') + '</div><div class="segl">' + SEM.map((x) => '<span' + (x[0] === cls ? ' class="on"' : '') + '>' + x[3] + '</span>').join('') + '</div>' + (nota ? '<p>' + nota + '</p>' : '') + '</div>';
+    if (!n) { box.innerHTML = cab('', null, tr('Sin estado todavía'), tr('Cargá tu primera lectura. El semáforo necesita al menos 4 lecturas en 7 días.'), true); return; }
+    const e = estado(n - 1), f = datos[n - 1].fecha, nota = f !== hoy().fecha ? tr('Todavía no cargaste la lectura de hoy: este es el estado de tu última lectura.') : '';
+    if (e.sin) { box.innerHTML = cab('', f, tr('Sin estado'), e.sin + (nota ? ' ' + nota : ''), true); return; }
     const a = SEM.find((x) => x[0] === e.cls);
     const li = (ok, t) => '<li class="' + (ok ? 'si' : 'no') + '">' + t + '</li>';
     let s = '<ul>';
-    s += li(!e.bajo && !e.alto && !e.m7baja, 'HRV ' + e.u.hrv + ': ' + (e.bajo ? 'bajo la banda' : e.alto ? 'sobre la banda (rebote, no habilita carga)' : 'dentro de la banda') + ' (' + fmt(e.b.lo, 1) + ' a ' + fmt(e.b.hi, 1) + ', ' + e.b.n + ' de 7 días)' + (e.m7baja ? '. Media de 7 días ' + fmt(media(e.h7), 1) + ', por debajo del 95 % de la media de tus 28 lecturas previas (' + fmt(media(e.h28), 1) + ') por segunda lectura seguida' : ''));
-    s += li(!e.pulso, 'FC mínima ' + (e.u.hr_min ?? 'sin dato') + (e.basal != null && e.u.hr_min != null ? ': ' + (e.u.hr_min - e.basal >= 0 ? '+' : '') + fmt(e.u.hr_min - e.basal) + ' contra tu basal de ' + fmt(e.basal) + ' (alerta desde +6)' : e.basal == null ? ' (tu basal aparece con 3 lecturas previas)' : ''));
-    s += e.ratio != null ? li(!e.cargaAlta, 'Carga de 7 días ' + fmt(e.c7) + ' contra ' + fmt(e.c28) + ' de media semanal (' + fmt(e.ratio, 2) + ' veces)') : '<li>Carga de entrenamiento: sin dato suficiente (hacen falta 14 días con minutos y esfuerzo cargados en 4 semanas). El estado sale solo de la lectura.</li>';
-    s += '</ul><p class="peq" style="margin:10px 0 0">Orienta en qué días conviene ubicar las sesiones de calidad; no reemplaza tu plan. Rojo: HRV bajo la banda o FC mínima alta. Violeta: las dos a la vez. Amarillo: HRV sobre la banda, media de 7 días bajo el 95 % de tus 28 lecturas previas dos lecturas seguidas, o carga alta. Base: entrenamiento guiado por HRV (Plews y col. 2013; Granero-Gallegos y col. 2020); los umbrales de carga son regla propia.</p>';
+    s += li(!e.bajo && !e.alto && !e.m7baja, tr('HRV ') + e.u.hrv + ': ' + (e.bajo ? tr('bajo la banda') : e.alto ? tr('sobre la banda (rebote, no habilita carga)') : tr('dentro de la banda')) + ' (' + fmt(e.b.lo, 1) + tr(' a ') + fmt(e.b.hi, 1) + ', ' + e.b.n + tr(' de 7 días)') + (e.m7baja ? tr('. Media de 7 días ') + fmt(media(e.h7), 1) + tr(', por debajo del 95 % de la media de tus 28 lecturas previas (') + fmt(media(e.h28), 1) + tr(') por segunda lectura seguida') : ''));
+    s += li(!e.pulso, tr('FC mínima ') + (e.u.hr_min ?? tr('sin dato')) + (e.basal != null && e.u.hr_min != null ? ': ' + (e.u.hr_min - e.basal >= 0 ? '+' : '') + fmt(e.u.hr_min - e.basal) + tr(' contra tu basal de ') + fmt(e.basal) + tr(' (alerta desde +6)') : e.basal == null ? tr(' (tu basal aparece con 3 lecturas previas)') : ''));
+    s += e.ratio != null ? li(!e.cargaAlta, tr('Carga de 7 días ') + fmt(e.c7) + tr(' contra ') + fmt(e.c28) + tr(' de media semanal (') + fmt(e.ratio, 2) + tr(' veces)')) : tr('<li>Carga de entrenamiento: sin dato suficiente (hacen falta 14 días con minutos y esfuerzo cargados en 4 semanas). El estado sale solo de la lectura.</li>');
+    s += tr('</ul><p class="peq" style="margin:10px 0 0">Orienta en qué días conviene ubicar las sesiones de calidad; no reemplaza tu plan. Rojo: HRV bajo la banda o FC mínima alta. Violeta: las dos a la vez. Amarillo: HRV sobre la banda, media de 7 días bajo el 95 % de tus 28 lecturas previas dos lecturas seguidas, o carga alta. Base: entrenamiento guiado por HRV (Plews y col. 2013; Granero-Gallegos y col. 2020); los umbrales de carga son regla propia.</p>');
     box.innerHTML = cab(e.cls, f, a[2], nota) + '<div class="dia ' + e.cls + '">' + s + '</div>';
   }
 
@@ -483,7 +507,7 @@
     const svg = $('graf'), W = 520, H = 170, pl = 30, pr = 8, pt = 10, pb = 22;
     const t1 = tms(hoy().fecha), t0 = t1 - (PER - 1) * 864e5;
     const idx = datos.map((d, i) => [d, i]).filter(([d]) => tms(d.fecha) >= t0 && d.hrv != null);
-    if (idx.length < 2) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" font-size="14" fill="var(--mute)">Aparece con 2 lecturas o más</text>'; return; }
+    if (idx.length < 2) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + tr('" text-anchor="middle" font-size="14" fill="var(--mute)">Aparece con 2 lecturas o más</text>'); return; }
     const bandas = idx.map(([d, i]) => [d, banda(i)]).filter(([, b]) => b);
     const vals = idx.map(([d]) => d.hrv).concat(bandas.flatMap(([, b]) => [b.lo, b.hi]));
     let lo = Math.floor(Math.min(...vals) - 3), hi = Math.ceil(Math.max(...vals) + 3);
@@ -493,15 +517,15 @@
     if (bandas.length > 1) s += '<path d="M' + bandas.map(([d, b]) => x(d.fecha) + ',' + y(b.hi)).join('L') + 'L' + bandas.slice().reverse().map(([d, b]) => x(d.fecha) + ',' + y(b.lo)).join('L') + 'Z" fill="var(--hrv)" opacity=".14"/>';
     s += '<polyline points="' + idx.map(([d]) => x(d.fecha) + ',' + y(d.hrv)).join(' ') + '" fill="none" stroke="var(--hrv)" stroke-width="2" stroke-linejoin="round"/>';
     idx.forEach(([d], k) => { s += '<circle cx="' + x(d.fecha) + '" cy="' + y(d.hrv) + '" r="' + (k === idx.length - 1 ? 4.5 : 2.5) + '" fill="var(--hrv)"><title>' + dma(d.fecha) + ': ' + d.hrv + '</title></circle>'; });
-    ejeX(t0, t1, PER, x).forEach(([f, anc]) => { s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + anc + '" font-size="10" fill="var(--mute)">' + f.slice(8, 10) + '/' + f.slice(5, 7) + '</text>'; });
-    s += '<text x="' + (W - pr) + '" y="' + (pt + 11) + '" text-anchor="end" font-size="11" font-weight="700" fill="var(--ok)">↑ más arriba es mejor</text>';
+    ejeX(t0, t1, PER, x).forEach(([f, anc]) => { s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + anc + '" font-size="10" fill="var(--mute)">' + dm(f) + '</text>'; });
+    s += '<text x="' + (W - pr) + '" y="' + (pt + 11) + tr('" text-anchor="end" font-size="11" font-weight="700" fill="var(--ok)">↑ más arriba es mejor</text>');
     svg.innerHTML = s;
   }
 
   function pintarHist() {
     const u = datos.slice(-10).reverse();
     const fu = (d) => d.fuente === 'banda' || d.fuente_hrv === 'captura' ? 'banda' : d.fuente_hrv === 'elite' || (!d.fuente && d.fecha < '2026-11-08' && d.hrv != null && perfil.cap_corr) ? 'Elite' : 'manual';
-    $('hist').innerHTML = u.length ? '<table class="hist"><thead><tr><th>Fecha</th><th>HRV</th><th>FC mín</th><th>Peso</th><th>Fuente</th><th></th></tr></thead><tbody>' + u.map((d) => '<tr><td>' + dma(d.fecha) + '</td><td>' + (d.hrv ?? '—') + '</td><td>' + (d.hr_min ?? '—') + '</td><td>' + fmt(d.peso, 1) + '</td><td>' + fu(d) + '</td><td><button type="button" class="ed" data-f="' + d.fecha + '">Editar</button></td></tr>').join('') + '</tbody></table>' : '<p class="peq">Todavía no hay lecturas.</p>';
+    $('hist').innerHTML = u.length ? tr('<table class="hist"><thead><tr><th>Fecha</th><th>HRV</th><th>FC mín</th><th>Peso</th><th>Fuente</th><th></th></tr></thead><tbody>') + u.map((d) => '<tr><td>' + dma(d.fecha) + '</td><td>' + (d.hrv ?? '—') + '</td><td>' + (d.hr_min ?? '—') + '</td><td>' + fmt(d.peso, 1) + '</td><td>' + tr(fu(d)) + '</td><td><button type="button" class="ed" data-f="' + d.fecha + tr('">Editar</button></td></tr>')).join('') + '</tbody></table>' : tr('<p class="peq">Todavía no hay lecturas.</p>');
     $('hist').querySelectorAll('button.ed').forEach((b) => b.addEventListener('click', () => editar(b.dataset.f)));
   }
   // ---------- v0.8 (fase 2): peso, déficit por el peso y sueño ----------
@@ -510,7 +534,7 @@
     const W = 520, H = +svg.getAttribute('viewBox').split(' ')[3], pl = 34, pr = 8, pt = 10, pb = 22;
     const dias = o.dias || PER, t1 = tms(o.hasta || hoy().fecha), t0 = t1 - (dias - 1) * 864e5;
     const todos = series.flatMap((x) => x.pts.filter((q) => tms(q.f) >= t0 && tms(q.f) <= t1));
-    if (!todos.length) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" font-size="14" fill="var(--mute)">' + (o.vacio || 'Sin datos') + '</text>'; return; }
+    if (!todos.length) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" font-size="14" fill="var(--mute)">' + (o.vacio || tr('Sin datos')) + '</text>'; return; }
     const vs = todos.map((q) => q.v).concat(o.ref != null ? [o.ref] : []).concat(o.cero ? [0] : []);
     let lo = Math.min(...vs), hi = Math.max(...vs); const pad = Math.max((hi - lo) * 0.12, o.pad || 0.5); lo = o.cero ? (lo >= 0 ? 0 : lo - pad) : lo - pad; hi = hi + pad; if (o.redondo) { const st = Math.pow(10, Math.floor(Math.log10((hi - lo) / 2))) * 5; lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st; }
     const bw = (W - pl - pr) / dias * (o.paso || 1);
@@ -525,13 +549,13 @@
       if (se.tipo === 'puntos' || (se.tipo === 'linea' && p.length === 1)) p.forEach((q) => { s += '<circle cx="' + x(q.f) + '" cy="' + y(q.v) + '" r="' + (se.r || 2.6) + '" fill="' + se.color + '"><title>' + (q.tip || dma(q.f) + ': ' + fmt(q.v, d1)) + '</title></circle>'; });
       if (se.tipo === 'barras') p.forEach((q) => { const y0 = y(Math.max(lo, 0)), yv = y(q.v); s += '<rect x="' + (x(q.f) - bw * 0.36) + '" y="' + Math.min(y0, yv) + '" width="' + bw * 0.72 + '" height="' + Math.abs(y0 - yv) + '" rx="2" fill="' + se.color + '"><title>' + (q.tip || dma(q.f) + ': ' + fmt(q.v, d1)) + '</title></rect>'; });
     });
-    ejeX(t0, t1, dias, x).forEach(([f, anc]) => { if (o.barras && dias <= 31) anc = 'middle'; s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + anc + '" font-size="10" fill="var(--mute)">' + f.slice(8, 10) + '/' + f.slice(5, 7) + '</text>'; });
+    ejeX(t0, t1, dias, x).forEach(([f, anc]) => { if (o.barras && dias <= 31) anc = 'middle'; s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + anc + '" font-size="10" fill="var(--mute)">' + dm(f) + '</text>'; });
     if (o.mejor) s += '<text x="' + (W - pr) + '" y="' + (pt + 11) + '" text-anchor="end" font-size="11" font-weight="700" fill="var(--ok)">' + o.mejor + '</text>';
     svg.innerHTML = s;
   }
   // v0.9: período elegido (7 días por defecto, como pidió Alex). Con 7 días, una fecha por día en el eje.
   let PER = 7;
-  const ETQ = { 7: 'últimos 7 días', 30: 'últimos 30 días', 90: 'últimos 3 meses', 180: 'últimos 6 meses', 365: 'últimos 12 meses' };
+  const ETQ = { 7: tr('últimos 7 días'), 30: tr('últimos 30 días'), 90: tr('últimos 3 meses'), 180: tr('últimos 6 meses'), 365: tr('últimos 12 meses') };
   function ejeX(t0, t1, dias, x) {
     if (dias <= 7) { const r = []; for (let t = t0; t <= t1; t += 864e5) r.push([iso(t), 'middle']); r[0][1] = 'start'; r[r.length - 1][1] = 'end'; return dias === 1 ? [[iso(t1), 'end']] : r; }
     return [[iso(t0), 'start'], [iso((t0 + t1) / 2), 'middle'], [iso(t1), 'end']];
@@ -549,21 +573,21 @@
     const P = {}; datos.forEach((d) => { if (d.peso != null) P[d.fecha] = d.peso; });
     const fs = Object.keys(P).sort(), th = tms(hoy().fecha);
     const pts = fs.map((f) => ({ f, v: P[f], tip: dma(f) + ': ' + fmt(P[f], 1) + ' kg' })), m7 = [];
-    for (let t = th - (PER - 1) * 864e5; t <= th; t += 864e5) { const r = medDias(P, t, 0, 6); if (r) m7.push({ f: iso(t), v: r.m, tip: dma(iso(t)) + ': media 7 días ' + fmt(r.m, 2) + ' kg (' + r.n + ' de 7)' }); }
+    for (let t = th - (PER - 1) * 864e5; t <= th; t += 864e5) { const r = medDias(P, t, 0, 6); if (r) m7.push({ f: iso(t), v: r.m, tip: dma(iso(t)) + tr(': media 7 días ') + fmt(r.m, 2) + ' kg (' + r.n + tr(' de 7)') }); }
     const obj = perfil.peso_objetivo ? Number(perfil.peso_objetivo) : null;
-    graf($('gPeso'), [{ pts: m7, tipo: 'linea', color: 'var(--peso)', ancho: 2.5 }].concat(PER <= 30 ? [{ pts, tipo: 'puntos', color: 'var(--peso)', r: 2.4 }] : []), { dec: 1, ref: obj, refTxt: obj ? 'objetivo ' + fmt(obj, 0) + ' kg' : '', vacio: 'Sin pesajes en el período' });
+    graf($('gPeso'), [{ pts: m7, tipo: 'linea', color: 'var(--peso)', ancho: 2.5 }].concat(PER <= 30 ? [{ pts, tipo: 'puntos', color: 'var(--peso)', r: 2.4 }] : []), { dec: 1, ref: obj, refTxt: obj ? tr('objetivo ') + fmt(obj, 0) + ' kg' : '', vacio: tr('Sin pesajes en el período') });
     const a = medDias(P, th, 0, 6), b = medDias(P, th, 7, 13), u = fs[fs.length - 1];
-    $('vPeso').innerHTML = a ? fmt(a.m, 2) + ' kg<small>media de 7 días (' + a.n + ' de 7)</small>' : (u ? fmt(P[u], 1) + ' kg<small>último pesaje ' + dma(u) + '; media de 7 días: datos insuficientes</small>' : '—');
-    let t = (PER <= 30 ? 'Puntos: pesaje diario. ' : '') + 'Línea: media de 7 días (mínimo 4 pesajes; un día sin pesaje no cuenta).';
-    if (a && b) t += ' Semana anterior: ' + fmt(b.m, 2) + ' kg (' + b.n + ' de 7). Cambio: ' + (a.m - b.m >= 0 ? '+' : '−') + fmt(Math.abs(a.m - b.m), 2) + ' kg.';
-    if (a && obj) t += ' Te faltan ' + fmt(Math.max(0, a.m - obj), 2) + ' kg para el objetivo de ' + fmt(obj, 0) + ' kg.';
+    $('vPeso').innerHTML = a ? fmt(a.m, 2) + tr(' kg<small>media de 7 días (') + a.n + tr(' de 7)</small>') : (u ? fmt(P[u], 1) + tr(' kg<small>último pesaje ') + dma(u) + tr('; media de 7 días: datos insuficientes</small>') : '—');
+    let t = (PER <= 30 ? tr('Puntos: pesaje diario. ') : '') + tr('Línea: media de 7 días (mínimo 4 pesajes; un día sin pesaje no cuenta).');
+    if (a && b) t += tr(' Semana anterior: ') + fmt(b.m, 2) + ' kg (' + b.n + tr(' de 7). Cambio: ') + (a.m - b.m >= 0 ? '+' : '−') + fmt(Math.abs(a.m - b.m), 2) + ' kg.';
+    if (a && obj) t += tr(' Te faltan ') + fmt(Math.max(0, a.m - obj), 2) + tr(' kg para el objetivo de ') + fmt(obj, 0) + ' kg.';
     $('pPeso').textContent = t;
     // Déficit estimado por el peso (misma regla que el Registro v78)
     const dp = []; let ult = null;
-    for (let tt = th - (PER - 1) * 864e5; tt <= th; tt += 864e5) { const x1 = medDias(P, tt, 0, 6), x0 = medDias(P, tt, 14, 20); if (!x1 || !x0) continue; const v = (x0.m - x1.m) * 7700 / 14; ult = { tt, v, x1, x0 }; dp.push({ f: iso(tt), v, tip: dma(iso(tt)) + ': ' + (v >= 0 ? 'déficit ' : 'superávit ') + kc(v) + ' kcal/día' }); }
-    graf($('gDef'), [{ pts: dp, tipo: 'linea', color: 'var(--ok)', ancho: 2.5 }], { cero: true, pad: 50, redondo: true, vacio: 'Hacen falta 3 semanas de pesajes' });
-    $('vDef').innerHTML = ult ? (ult.v >= 0 ? '≈ ' + kc(ult.v) : '+' + kc(ult.v)) + ' kcal<small>' + (ult.v >= 0 ? 'déficit por día' : 'comido de más por día') + '</small>' : '—<small>datos insuficientes</small>';
-    $('pDef').textContent = ult ? 'Media de los últimos 7 días: ' + fmt(ult.x1.m, 2) + ' kg (' + ult.x1.n + ' de 7). Dos semanas antes: ' + fmt(ult.x0.m, 2) + ' kg (' + ult.x0.n + ' de 7). (' + fmt(ult.x0.m, 2) + ' − ' + fmt(ult.x1.m, 2) + ') × 7.700 ÷ 14 = ' + (ult.v < 0 ? '−' : '') + kc(ult.v) + ' kcal/día. 7.700 kcal por kg es una aproximación: el agua y la sal mueven el peso de un día para otro, por eso se usan medias.' : '(Media de peso de los 7 días que terminan hace 14 días − media de los últimos 7) × 7.700 ÷ 14, cada media con mínimo 4 pesajes. Hacen falta 3 semanas de pesajes.';
+    for (let tt = th - (PER - 1) * 864e5; tt <= th; tt += 864e5) { const x1 = medDias(P, tt, 0, 6), x0 = medDias(P, tt, 14, 20); if (!x1 || !x0) continue; const v = (x0.m - x1.m) * 7700 / 14; ult = { tt, v, x1, x0 }; dp.push({ f: iso(tt), v, tip: dma(iso(tt)) + ': ' + (v >= 0 ? tr('déficit ') : tr('superávit ')) + kc(v) + tr(' kcal/día') }); }
+    graf($('gDef'), [{ pts: dp, tipo: 'linea', color: 'var(--ok)', ancho: 2.5 }], { cero: true, pad: 50, redondo: true, vacio: tr('Hacen falta 3 semanas de pesajes') });
+    $('vDef').innerHTML = ult ? (ult.v >= 0 ? '≈ ' + kc(ult.v) : '+' + kc(ult.v)) + tr(' kcal<small>') + (ult.v >= 0 ? tr('déficit por día') : tr('comido de más por día')) + '</small>' : tr('—<small>datos insuficientes</small>');
+    $('pDef').textContent = ult ? tr('Media de los últimos 7 días: ') + fmt(ult.x1.m, 2) + ' kg (' + ult.x1.n + tr(' de 7). Dos semanas antes: ') + fmt(ult.x0.m, 2) + ' kg (' + ult.x0.n + tr(' de 7). (') + fmt(ult.x0.m, 2) + ' − ' + fmt(ult.x1.m, 2) + tr(') × 7.700 ÷ 14 = ') + (ult.v < 0 ? '−' : '') + kc(ult.v) + tr(' kcal/día. 7.700 kcal por kg es una aproximación: el agua y la sal mueven el peso de un día para otro, por eso se usan medias.') : tr('(Media de peso de los 7 días que terminan hace 14 días − media de los últimos 7) × 7.700 ÷ 14, cada media con mínimo 4 pesajes. Hacen falta 3 semanas de pesajes.');
   }
   let garDias = [];
   async function cargarGarmin() {
@@ -576,35 +600,35 @@
     const fs = Object.keys(S).sort(); show('cSue', fs.length > 0); if (!fs.length) return;
     const th = tms(hoy().fecha), hm = (h) => Math.floor(h) + ' h ' + p2(Math.round((h % 1) * 60)) + ' min';
     const g = (f) => garDias.find((x) => x.fecha === f) || {};
-    const pts = fs.map((f) => ({ f, v: S[f], tip: dma(f) + ': ' + hm(S[f]) + (g(f).sueno_score != null ? ' · puntaje ' + g(f).sueno_score : '') + (g(f).siesta_min ? ' · siesta ' + g(f).siesta_min + ' min' : '') }));
-    const larga = PER >= 90, ps = larga ? semanal(S, th - (PER - 1) * 864e5, th).map((w) => ({ f: w.f, v: w.v, tip: 'Semana del ' + dma(w.lun) + ': media ' + hm(w.v) + ' por noche (' + w.n + ' de 7)' })) : pts;
-    graf($('gSue'), [{ pts: ps, tipo: 'barras', color: 'var(--sue)' }], { barras: true, paso: larga ? 7 : 1, cero: true, dec: 0, ref: 7, refTxt: '7 h', vacio: 'Sin noches en el período' });
+    const pts = fs.map((f) => ({ f, v: S[f], tip: dma(f) + ': ' + hm(S[f]) + (g(f).sueno_score != null ? tr(' · puntaje ') + g(f).sueno_score : '') + (g(f).siesta_min ? tr(' · siesta ') + g(f).siesta_min + ' min' : '') }));
+    const larga = PER >= 90, ps = larga ? semanal(S, th - (PER - 1) * 864e5, th).map((w) => ({ f: w.f, v: w.v, tip: tr('Semana del ') + dma(w.lun) + tr(': media ') + hm(w.v) + tr(' por noche (') + w.n + tr(' de 7)') })) : pts;
+    graf($('gSue'), [{ pts: ps, tipo: 'barras', color: 'var(--sue)' }], { barras: true, paso: larga ? 7 : 1, cero: true, dec: 0, ref: 7, refTxt: '7 h', vacio: tr('Sin noches en el período') });
     const u = fs[fs.length - 1], a = medDias(S, th, 0, 6), cortas = Object.entries(S).filter(([f, h]) => tms(f) > th - 7 * 864e5 && h < 6).length;
-    $('vSue').innerHTML = hm(S[u]) + '<small>' + (u === hoy().fecha ? 'anoche' : 'noche al ' + dma(u)) + (g(u).sueno_score != null ? ' · puntaje ' + g(u).sueno_score : '') + '</small>';
-    $('pSue').textContent = (a ? 'Media de 7 noches: ' + hm(a.m) + ' (' + a.n + ' de 7). Noches bajo 6 h en la última semana: ' + cortas + '. ' : 'Media de 7 noches: datos insuficientes. ') + (larga ? 'Barras: media por noche de cada semana de lunes a domingo (mínimo 4 noches). ' : 'Barras: horas por noche de Garmin (la fecha es el día en que te despertaste). ') + 'Sin siestas. Línea punteada: 7 h, el mínimo recomendado para adultos (Watson y col. 2015, consenso AASM/SRS).';
+    $('vSue').innerHTML = hm(S[u]) + '<small>' + (u === hoy().fecha ? tr('anoche') : tr('noche al ') + dma(u)) + (g(u).sueno_score != null ? tr(' · puntaje ') + g(u).sueno_score : '') + '</small>';
+    $('pSue').textContent = (a ? tr('Media de 7 noches: ') + hm(a.m) + ' (' + a.n + tr(' de 7). Noches bajo 6 h en la última semana: ') + cortas + '. ' : tr('Media de 7 noches: datos insuficientes. ')) + (larga ? tr('Barras: media por noche de cada semana de lunes a domingo (mínimo 4 noches). ') : tr('Barras: horas por noche de Garmin (la fecha es el día en que te despertaste). ')) + tr('Sin siestas. Línea punteada: 7 h, el mínimo recomendado para adultos (Watson y col. 2015, consenso AASM/SRS).');
   }
   function pintar() { pintarResultado(); pintarGrafico(); pintarPeso(); pintarSueno(); pintarHist(); }
-  $('per').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-d]'); if (!b) return; PER = +b.dataset.d; $('per').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); $('tHrv').textContent = 'HRV, ' + ETQ[PER]; pintarGrafico(); pintarPeso(); pintarSueno(); });
+  $('per').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-d]'); if (!b) return; PER = +b.dataset.d; $('per').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); $('tHrv').textContent = tr('HRV, ') + ETQ[PER]; pintarGrafico(); pintarPeso(); pintarSueno(); });
 
   // ---------- Formulario ----------
   const elite = () => perfil.fuente_oficial === 'elite';
   function prepararForm() {
     const h = hoy(); $('iFecha').value = h.fecha; $('iHora').value = h.hora;
     $('formAyuda').textContent = elite()
-      ? 'Tu fuente oficial es Elite HRV: cargá acá sus valores. La toma con la banda de arriba se guarda aparte, para compararla.'
-      : 'Si mediste con la banda, los valores se completan solos. Revisalos, sumá el peso y guardá.';
-    $('betaMed').textContent = elite() ? 'COMPARACIÓN' : ''; show('betaMed', elite());
+      ? tr('Tu fuente oficial es Elite HRV: cargá acá sus valores. La toma con la banda de arriba se guarda aparte, para compararla.')
+      : tr('Si mediste con la banda, los valores se completan solos. Revisalos, sumá el peso y guardá.');
+    $('betaMed').textContent = elite() ? tr('COMPARACIÓN') : ''; show('betaMed', elite());
   }
   let editando = null;
   function editar(f) {
     const d = datos.find((x) => x.fecha === f); if (!d) return;
     editando = f; const v = (x) => x == null ? '' : x;
     $('iFecha').value = d.fecha; $('iHora').value = d.hora || ''; $('iHrv').value = v(d.hrv); $('iPeso').value = v(d.peso); $('iMin').value = v(d.hr_min); $('iProm').value = v(d.hr_prom); $('iMax').value = v(d.hr_max); $('iMinEnt').value = v(d.carga_min); $('iRpe').value = v(d.carga_rpe); $('iSes').value = v(d.sesion); $('iGym').value = v(d.gym); $('iNota').value = v(d.nota);
-    $('bGuardar').textContent = 'Guardar cambios del ' + dma(f); show('bCancelarEd', true);
-    $('fAviso').textContent = 'Editando la lectura del ' + dma(f) + '.'; $('fAviso').className = 'aviso';
+    $('bGuardar').textContent = tr('Guardar cambios del ') + dma(f); show('bCancelarEd', true);
+    $('fAviso').textContent = tr('Editando la lectura del ') + dma(f) + '.'; $('fAviso').className = 'aviso';
     $('fLect').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  function finEdicion() { editando = null; $('bGuardar').textContent = 'Guardar lectura'; show('bCancelarEd', false); ['iHrv', 'iPeso', 'iMin', 'iProm', 'iMax', 'iMinEnt', 'iRpe', 'iSes', 'iGym', 'iNota'].forEach((i) => $(i).value = ''); prepararForm(); prellenarCaptura(); prellenarEntreno(); }
+  function finEdicion() { editando = null; $('bGuardar').textContent = tr('Guardar lectura'); show('bCancelarEd', false); ['iHrv', 'iPeso', 'iMin', 'iProm', 'iMax', 'iMinEnt', 'iRpe', 'iSes', 'iGym', 'iNota'].forEach((i) => $(i).value = ''); prepararForm(); prellenarCaptura(); prellenarEntreno(); }
   // Toma del día hecha con la app Captura RR (llega a captura_rr por la función captura-rr): completa el formulario como en el Registro v74.
   const corr = () => Number(perfil.cap_corr) || 0;
   async function prellenarCaptura() {
@@ -629,17 +653,17 @@
     if (!ses.length) return;
     const seg = ses.reduce((a, x) => a + x.dur_s, 0), conR = ses.filter((x) => x.rpe != null);
     const rpe = conR.length === ses.length ? conR.reduce((a, x) => a + x.dur_s * x.rpe, 0) / seg / 10 : null;
-    const txt = ses.map((x) => { const n = String(x.nombre || 'Carrera').replace(/^Ciudad de Buenos Aires\s*[-–]?\s*/, '').replace(/\s*\([^)]*$/, '').trim() || 'Carrera'; const km = (x.dist_m || 0) / 1000;
-      return n + (km ? ' · ' + fmt(km, 2) + ' km en ' + segHms(x.dur_s) + ' (' + segHms(x.dur_s / km).replace(/^0:/, '') + '/km)' : ' · ' + segHms(x.dur_s)); }).join(' + ');
+    const txt = ses.map((x) => { const n = String(x.nombre || tr('Carrera')).replace(/^Ciudad de Buenos Aires\s*[-–]?\s*/, '').replace(/\s*\([^)]*$/, '').trim() || tr('Carrera'); const km = (x.dist_m || 0) / 1000;
+      return n + (km ? ' · ' + fmt(km, 2) + tr(' km en ') + segHms(x.dur_s) + ' (' + segHms(x.dur_s / km).replace(/^0:/, '') + '/km)' : ' · ' + segHms(x.dur_s)); }).join(' + ');
     if (!$('iMinEnt').value) $('iMinEnt').value = Math.round(seg / 60);
     if (!$('iRpe').value && rpe != null) $('iRpe').value = Math.max(1, Math.min(10, Math.round(rpe)));
     if (!$('iSes').value) $('iSes').value = txt;
-    $('entAviso').textContent = 'Entreno del ' + dma(ayer) + ' traído de Garmin (' + ses.length + (ses.length === 1 ? ' sesión' : ' sesiones') + '). El esfuerzo es el que marcaste en el reloj' + (rpe == null ? '; en alguna sesión no está cargado: completalo' : '') + '. Revisalo y corregí si hace falta.';
+    $('entAviso').textContent = tr('Entreno del ') + dma(ayer) + tr(' traído de Garmin (') + ses.length + (ses.length === 1 ? tr(' sesión') : tr(' sesiones')) + tr('). El esfuerzo es el que marcaste en el reloj') + (rpe == null ? tr('; en alguna sesión no está cargado: completalo') : '') + tr('. Revisalo y corregí si hace falta.');
   }
   function llenarDesdeToma(fecha, hora, score, mn, pr, mx, art) {
     const hrv = Math.round(score + corr());
     $('iFecha').value = fecha; $('iHora').value = hora; $('iHrv').value = hrv; $('iMin').value = Math.round(mn); $('iProm').value = Math.round(pr); $('iMax').value = Math.round(mx);
-    $('fAviso').textContent = ($('fAviso').textContent.startsWith('Cambios guardados') ? 'Cambios guardados. ' : '') + 'Completado con la toma de las ' + hora + ': score ' + fmt(score, 1) + (corr() ? ' + ' + fmt(corr(), 1) + ' = ' + hrv : '') + '. Sumá el peso y guardá.'; $('fAviso').className = 'aviso ok';
+    $('fAviso').textContent = ($('fAviso').textContent.startsWith(tr('Cambios guardados')) ? tr('Cambios guardados. ') : '') + tr('Completado con la toma de las ') + hora + tr(': score ') + fmt(score, 1) + (corr() ? ' + ' + fmt(corr(), 1) + ' = ' + hrv : '') + tr('. Sumá el peso y guardá.'); $('fAviso').className = 'aviso ok';
   }
   const num = (id) => { const v = $(id).value.trim().replace(',', '.'); return v === '' ? null : Number(v); };
   $('bCancelarEd').addEventListener('click', () => { finEdicion(); $('fAviso').textContent = ''; });
@@ -647,39 +671,39 @@
     e.preventDefault();
     const fecha = $('iFecha').value, hora = $('iHora').value;
     const d = { fecha, hora, hrv: num('iHrv'), hr_min: num('iMin'), hr_prom: num('iProm'), hr_max: num('iMax'), peso: num('iPeso'), carga_min: num('iMinEnt'), carga_rpe: num('iRpe'), sesion: $('iSes').value.trim() || null, gym: $('iGym').value.trim() || null, nota: $('iNota').value.trim() || null, guardado: new Date().toISOString(), app: VER };
-    if (d.hrv == null && d.peso == null) { alertar('Cargá al menos el HRV o el peso.'); return; }
-    if (d.hr_max != null && d.hr_max > 200) { alertar('FC máxima mayor a 200: la lectura no sirve, repetila.'); return; }
-    if ((d.carga_min == null) !== (d.carga_rpe == null)) { alertar('Para la carga hacen falta los minutos y el esfuerzo, o ninguno de los dos.'); return; }
+    if (d.hrv == null && d.peso == null) { alertar(tr('Cargá al menos el HRV o el peso.')); return; }
+    if (d.hr_max != null && d.hr_max > 200) { alertar(tr('FC máxima mayor a 200: la lectura no sirve, repetila.')); return; }
+    if ((d.carga_min == null) !== (d.carga_rpe == null)) { alertar(tr('Para la carga hacen falta los minutos y el esfuerzo, o ninguno de los dos.')); return; }
     if (!editando && ultimaToma && ultimaToma.fecha === fecha && !elite()) { d.fuente = 'banda'; d.fuente_hrv = 'captura'; d.rmssd = ultimaToma.rmssd; d.artefactos = ultimaToma.art; d.cap_score = ultimaToma.score && Math.round(ultimaToma.score * 100) / 100; if (ultimaToma.id) d.cap_id = ultimaToma.id; }
     const prev = datos.find((x) => x.fecha === fecha);
     if (editando && prev) { d.guardado = prev.guardado || d.guardado; d.editado = new Date().toISOString(); }
     if (prev) Object.keys(prev).forEach((k) => { if (d[k] == null && prev[k] != null && !(editando && ['hrv','peso','hr_min','hr_prom','hr_max','carga_min','carga_rpe','sesion','gym','nota'].includes(k))) d[k] = prev[k]; });
     Object.keys(d).forEach((k) => d[k] == null && delete d[k]);
-    if (await guardarDoc('lecturas', fecha, d)) { const fueEd = !!editando; await cargarDatos(); finEdicion(); $('fAviso').textContent = fueEd ? 'Cambios guardados.' : 'Guardada.'; $('fAviso').className = 'aviso ok'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (await guardarDoc('lecturas', fecha, d)) { const fueEd = !!editando; await cargarDatos(); finEdicion(); $('fAviso').textContent = fueEd ? tr('Cambios guardados.') : tr('Guardada.'); $('fAviso').className = 'aviso ok'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
 
   // ---------- Medición con la banda (misma corrección que Captura RR v0.4) ----------
   let device = null, chr = null, rec = null, timer = null, wake = null, ultimaToma = null;
   const mAviso = (t, c) => { $('mAviso').textContent = t; $('mAviso').className = 'aviso' + (c ? ' ' + c : ''); };
-  if (!('bluetooth' in navigator)) { mAviso('Este navegador no tiene Bluetooth web. Usá Chrome en Android o en la compu. En iPhone todavía no funciona.', 'mal'); $('bCon').disabled = true; }
+  if (!('bluetooth' in navigator)) { mAviso(tr('Este navegador no tiene Bluetooth web. Usá Chrome en Android o en la compu. En iPhone todavía no funciona.'), 'mal'); $('bCon').disabled = true; }
   function parse(dv) { const f = dv.getUint8(0); let i = 1; const hr = (f & 1) ? dv.getUint16(i, true) : dv.getUint8(i); i += (f & 1) ? 2 : 1; if (f & 8) i += 2; const rr = []; if (f & 16) for (; i + 1 < dv.byteLength; i += 2) rr.push(dv.getUint16(i, true) * 1000 / 1024); return { hr, rr }; }
   function onData(ev) { const { hr, rr } = parse(ev.target.value); $('mHr').textContent = hr || '—'; if (rr.length) { $('mRr').textContent = Math.round(rr[rr.length - 1]); if (rec) rec.rr.push(...rr); } }
   $('bCon').addEventListener('click', async () => {
     try {
       device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
-      device.addEventListener('gattserverdisconnected', () => { $('bCon').disabled = false; $('bIni').disabled = true; if (rec) { cortar(); mAviso('Se cortó la conexión en medio de la toma. Repetila.', 'mal'); } else mAviso('Banda desconectada.'); });
-      mAviso('Conectando…');
+      device.addEventListener('gattserverdisconnected', () => { $('bCon').disabled = false; $('bIni').disabled = true; if (rec) { cortar(); mAviso(tr('Se cortó la conexión en medio de la toma. Repetila.'), 'mal'); } else mAviso(tr('Banda desconectada.')); });
+      mAviso(tr('Conectando…'));
       const svc = await (await device.gatt.connect()).getPrimaryService('heart_rate');
       chr = await svc.getCharacteristic('heart_rate_measurement'); chr.addEventListener('characteristicvaluechanged', onData); await chr.startNotifications();
-      $('bCon').disabled = true; $('bIni').disabled = false; mAviso('Conectada: ' + (device.name || 'banda') + '. Esperá unos segundos quieto y tocá Empezar toma.', 'ok');
-    } catch (e) { mAviso(e && e.name === 'NotFoundError' ? 'No elegiste ninguna banda.' : 'No se pudo conectar: ' + (e && e.message ? e.message : e) + '. Si otra app está conectada a la banda, cerrala.', 'mal'); }
+      $('bCon').disabled = true; $('bIni').disabled = false; mAviso(tr('Conectada: ') + (device.name || 'banda') + tr('. Esperá unos segundos quieto y tocá Empezar toma.'), 'ok');
+    } catch (e) { mAviso(e && e.name === 'NotFoundError' ? tr('No elegiste ninguna banda.') : tr('No se pudo conectar: ') + (e && e.message ? e.message : e) + tr('. Si otra app está conectada a la banda, cerrala.'), 'mal'); }
   });
   $('bIni').addEventListener('click', async () => {
     rec = { t0: Date.now(), dur: 150, rr: [] }; aviso(false); $('bIni').disabled = true; $('bCan').disabled = false;
     try { wake = await navigator.wakeLock?.request('screen'); } catch (_) { wake = null; }
-    mAviso('Grabando. Quieto y respirando normal.'); timer = setInterval(tic, 250); tic();
+    mAviso(tr('Grabando. Quieto y respirando normal.')); timer = setInterval(tic, 250); tic();
   });
-  $('bCan').addEventListener('click', () => { rec = null; cortar(); mAviso('Toma cancelada.'); });
+  $('bCan').addEventListener('click', () => { rec = null; cortar(); mAviso(tr('Toma cancelada.')); });
   function tic() { const r = rec.dur - (Date.now() - rec.t0) / 1000, s = Math.max(0, Math.ceil(r)); $('mT').textContent = Math.floor(s / 60) + ':' + p2(s % 60); if (r <= 0) terminar(); }
   function cortar() { clearInterval(timer); timer = null; try { wake?.release(); } catch (_) {} wake = null; $('bCan').disabled = true; $('bIni').disabled = !(device && device.gatt.connected); $('mT').textContent = '—'; }
   const mediana = (a) => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -692,16 +716,16 @@
     const hrs = buenos.map((v) => 60000 / v), art = n ? (n - buenos.length) / n * 100 : 100;
     const hrMin = hrs.length ? Math.min(...hrs) : null, hrMax = hrs.length ? Math.max(...hrs) : null, hrProm = m ? 60000 / m : null;
     const score = rmssd ? Math.log(rmssd) / 6.5 * 100 : null, fallas = [];
-    if (n < 60) fallas.push('pocos latidos registrados (' + n + ')');
-    if (art > 5) fallas.push('latidos descartados ' + fmt(art, 1) + ' % (tope 5 %)');
-    if (hrMax != null && hrMax > 200) fallas.push('FC máx ' + Math.round(hrMax) + ' (tope 200)');
+    if (n < 60) fallas.push(tr('pocos latidos registrados (') + n + ')');
+    if (art > 5) fallas.push(tr('latidos descartados ') + fmt(art, 1) + tr(' % (tope 5 %)'));
+    if (hrMax != null && hrMax > 200) fallas.push(tr('FC máx ') + Math.round(hrMax) + tr(' (tope 200)'));
     return { n, buenos: buenos.length, art, rmssd, score, hrMin, hrProm, hrMax, valida: !fallas.length, fallas };
   }
   async function terminar() {
     const r = rec; rec = null; cortar(); aviso(true);
     const a = analizar(r.rr), d = new Date(r.t0), fecha = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()), hora = p2(d.getHours()) + ':' + p2(d.getMinutes());
-    if (!a.valida) { mAviso('La toma no sirve: ' + a.fallas.join('; ') + '. Repetila.', 'mal'); }
-    else mAviso('Toma válida: score ' + fmt(a.score) + ', rMSSD ' + fmt(a.rmssd, 1) + ' ms, FC ' + fmt(a.hrMin) + ' / ' + fmt(a.hrProm) + ' / ' + fmt(a.hrMax) + ', descartados ' + fmt(a.art, 1) + ' %.', 'ok');
+    if (!a.valida) { mAviso(tr('La toma no sirve: ') + a.fallas.join('; ') + tr('. Repetila.'), 'mal'); }
+    else mAviso(tr('Toma válida: score ') + fmt(a.score) + tr(', rMSSD ') + fmt(a.rmssd, 1) + ' ms, FC ' + fmt(a.hrMin) + ' / ' + fmt(a.hrProm) + ' / ' + fmt(a.hrMax) + tr(', descartados ') + fmt(a.art, 1) + ' %.', 'ok');
     const cap = { fecha, hora, score: a.score && Math.round(a.score * 100) / 100, rmssd: a.rmssd && Math.round(a.rmssd * 100) / 100, fc_min: a.hrMin && Math.round(a.hrMin * 10) / 10, fc_med: a.hrProm && Math.round(a.hrProm * 10) / 10, fc_max: a.hrMax && Math.round(a.hrMax * 10) / 10, n: a.n, buenos: a.buenos, art: Math.round(a.art * 100) / 100, dur: r.dur, valida: a.valida, fallas: a.fallas, version: 'app ' + VER, rr: r.rr.map((v) => Math.round(v * 10) / 10), recibido: new Date().toISOString() };
     await guardarDoc('captura_rr', fecha + 'T' + hora.replace(':', '-'), cap);
     if (a.valida) {
