@@ -44,6 +44,9 @@
   .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .fila3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
   .campo { margin-bottom: 10px; }
+  /* Estándar de Alex (16-11-2026): en una fila, los cuadros quedan alineados aunque el texto de arriba ocupe más renglones. */
+  .fila > .campo, .fila3 > .campo { display: flex; flex-direction: column; }
+  .fila > .campo > input, .fila > .campo > select, .fila3 > .campo > input, .fila3 > .campo > select { margin-top: auto; }
   .aviso { font-size: 13px; line-height: 1.45; color: var(--mute); margin: 8px 0 0; }
   .aviso.mal { color: var(--bad); } .aviso.ok { color: var(--ok); }
   .peq { font-size: 12px; color: var(--mute); line-height: 1.45; }
@@ -227,7 +230,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.8 · 16-11-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.8.1 · 16-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -236,7 +239,7 @@
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.8'; const CONS_VER = 3;
+  const VER = '0.8.1'; const CONS_VER = 3;
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
