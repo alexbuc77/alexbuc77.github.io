@@ -86,6 +86,10 @@
   .hist th { font-size: 11px; color: var(--mute); font-weight: 600; }
   .badge { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--beta); border: 1px solid var(--beta); border-radius: 99px; padding: 1px 7px; vertical-align: middle; }
   .pie { text-align: center; font-size: 11px; color: var(--mute); }
+  /* v0.9: selector de período (igual que el Registro), fijo arriba al hacer scroll */
+  .per { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; padding: 8px 0; background: var(--ground); }
+  .per button { flex: 1; font-size: 12px; padding: 8px 2px; font-weight: 600; white-space: nowrap; min-width: 0; }
+  .per button.on { background: var(--ink); color: var(--ground); border-color: var(--ink); }
   /* v0.8: cabecera de cuadro (título a la izquierda, valor a la derecha) */
   .cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
   .cab h2 { margin: 0; }
@@ -201,15 +205,17 @@
       <p class="aviso" id="gAviso"></p>
     </section>
 
+    <div class="per" id="per" role="group" aria-label="Período de los gráficos"><button type="button" data-d="7" class="on">7 días</button><button type="button" data-d="30">30 días</button><button type="button" data-d="90">3 meses</button><button type="button" data-d="180">6 meses</button><button type="button" data-d="365">12 meses</button></div>
+
     <section class="card">
-      <h2>HRV, últimos 30 días</h2>
-      <svg id="graf" viewBox="0 0 520 170" role="img" aria-label="HRV de los últimos 30 días con banda de 7 días"></svg>
+      <h2 id="tHrv">HRV, últimos 7 días</h2>
+      <svg id="graf" viewBox="0 0 520 170" role="img" aria-label="HRV con banda de 7 días"></svg>
       <p class="peq">Línea: tu score diario. Franja: tu banda de 7 días (media ± 1,5 desvíos, mínimo 4 lecturas). Más arriba es mejor.</p>
     </section>
 
     <section class="card">
       <div class="cab"><h2>Peso</h2><div class="val" id="vPeso">—</div></div>
-      <svg id="gPeso" viewBox="0 0 520 170" role="img" aria-label="Peso de los últimos 30 días"></svg>
+      <svg id="gPeso" viewBox="0 0 520 170" role="img" aria-label="Peso"></svg>
       <p class="peq" id="pPeso">Puntos: pesaje diario. Línea: media de 7 días (mínimo 4 pesajes; un día sin pesaje no cuenta).</p>
     </section>
 
@@ -221,7 +227,7 @@
 
     <section class="card hidden" id="cSue">
       <div class="cab"><h2>Sueño</h2><div class="val" id="vSue">—</div></div>
-      <svg id="gSue" viewBox="0 0 520 160" role="img" aria-label="Horas de sueño de las últimas 14 noches"></svg>
+      <svg id="gSue" viewBox="0 0 520 160" role="img" aria-label="Horas de sueño por noche"></svg>
       <p class="peq" id="pSue">Horas de sueño por noche, de Garmin (la fecha es el día en que te despertaste). Sin siestas. Fuente: tu reloj Garmin.</p>
     </section>
 
@@ -230,7 +236,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.8.1 · 16-11-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.9 · 16-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -239,7 +245,7 @@
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.8.1'; const CONS_VER = 3;
+  const VER = '0.9'; const CONS_VER = 3;
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -438,7 +444,7 @@
 
   function pintarGrafico() {
     const svg = $('graf'), W = 520, H = 170, pl = 30, pr = 8, pt = 10, pb = 22;
-    const t1 = tms(hoy().fecha), t0 = t1 - 29 * 864e5;
+    const t1 = tms(hoy().fecha), t0 = t1 - (PER - 1) * 864e5;
     const idx = datos.map((d, i) => [d, i]).filter(([d]) => tms(d.fecha) >= t0 && d.hrv != null);
     if (idx.length < 2) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" font-size="14" fill="var(--mute)">Aparece con 2 lecturas o más</text>'; return; }
     const bandas = idx.map(([d, i]) => [d, banda(i)]).filter(([, b]) => b);
@@ -450,7 +456,7 @@
     if (bandas.length > 1) s += '<path d="M' + bandas.map(([d, b]) => x(d.fecha) + ',' + y(b.hi)).join('L') + 'L' + bandas.slice().reverse().map(([d, b]) => x(d.fecha) + ',' + y(b.lo)).join('L') + 'Z" fill="var(--hrv)" opacity=".14"/>';
     s += '<polyline points="' + idx.map(([d]) => x(d.fecha) + ',' + y(d.hrv)).join(' ') + '" fill="none" stroke="var(--hrv)" stroke-width="2" stroke-linejoin="round"/>';
     idx.forEach(([d], k) => { s += '<circle cx="' + x(d.fecha) + '" cy="' + y(d.hrv) + '" r="' + (k === idx.length - 1 ? 4.5 : 2.5) + '" fill="var(--hrv)"><title>' + dma(d.fecha) + ': ' + d.hrv + '</title></circle>'; });
-    [t0, (t0 + t1) / 2, t1].forEach((t, k) => { const f = iso(t); s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + ['start', 'middle', 'end'][k] + '" font-size="10" fill="var(--mute)">' + f.slice(8, 10) + '/' + f.slice(5, 7) + '</text>'; });
+    ejeX(t0, t1, PER, x).forEach(([f, anc]) => { s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + anc + '" font-size="10" fill="var(--mute)">' + f.slice(8, 10) + '/' + f.slice(5, 7) + '</text>'; });
     s += '<text x="' + (W - pr) + '" y="' + (pt + 11) + '" text-anchor="end" font-size="11" font-weight="700" fill="var(--ok)">↑ más arriba es mejor</text>';
     svg.innerHTML = s;
   }
@@ -465,12 +471,12 @@
   // Gráfico simple de una serie por fecha. series: [{ pts: [{ f, v, tip }], tipo: 'linea'|'puntos'|'barras', color, ancho }]
   function graf(svg, series, o = {}) {
     const W = 520, H = +svg.getAttribute('viewBox').split(' ')[3], pl = 34, pr = 8, pt = 10, pb = 22;
-    const t1 = tms(o.hasta || hoy().fecha), t0 = t1 - ((o.dias || 30) - 1) * 864e5;
+    const dias = o.dias || PER, t1 = tms(o.hasta || hoy().fecha), t0 = t1 - (dias - 1) * 864e5;
     const todos = series.flatMap((x) => x.pts.filter((q) => tms(q.f) >= t0 && tms(q.f) <= t1));
     if (!todos.length) { svg.innerHTML = '<text x="' + W / 2 + '" y="' + H / 2 + '" text-anchor="middle" font-size="14" fill="var(--mute)">' + (o.vacio || 'Sin datos') + '</text>'; return; }
     const vs = todos.map((q) => q.v).concat(o.ref != null ? [o.ref] : []).concat(o.cero ? [0] : []);
     let lo = Math.min(...vs), hi = Math.max(...vs); const pad = Math.max((hi - lo) * 0.12, o.pad || 0.5); lo = o.cero ? (lo >= 0 ? 0 : lo - pad) : lo - pad; hi = hi + pad; if (o.redondo) { const st = Math.pow(10, Math.floor(Math.log10((hi - lo) / 2))) * 5; lo = Math.floor(lo / st) * st; hi = Math.ceil(hi / st) * st; }
-    const bw = (W - pl - pr) / (o.dias || 30);
+    const bw = (W - pl - pr) / dias * (o.paso || 1);
     const x = (f) => pl + (tms(f) - t0) / (t1 - t0 || 1) * (W - pl - pr - (o.barras ? bw : 0)) + (o.barras ? bw / 2 : 0), y = (v) => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
     const d1 = o.dec ?? 0; let s = '';
     [lo, (lo + hi) / 2, hi].forEach((v) => { s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (pl - 4) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="10" fill="var(--mute)">' + fmt(v, d1) + '</text>'; });
@@ -482,9 +488,22 @@
       if (se.tipo === 'puntos' || (se.tipo === 'linea' && p.length === 1)) p.forEach((q) => { s += '<circle cx="' + x(q.f) + '" cy="' + y(q.v) + '" r="' + (se.r || 2.6) + '" fill="' + se.color + '"><title>' + (q.tip || dma(q.f) + ': ' + fmt(q.v, d1)) + '</title></circle>'; });
       if (se.tipo === 'barras') p.forEach((q) => { const y0 = y(Math.max(lo, 0)), yv = y(q.v); s += '<rect x="' + (x(q.f) - bw * 0.36) + '" y="' + Math.min(y0, yv) + '" width="' + bw * 0.72 + '" height="' + Math.abs(y0 - yv) + '" rx="2" fill="' + se.color + '"><title>' + (q.tip || dma(q.f) + ': ' + fmt(q.v, d1)) + '</title></rect>'; });
     });
-    [t0, (t0 + t1) / 2, t1].forEach((t, k) => { const f = iso(t); s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + ['start', 'middle', 'end'][k] + '" font-size="10" fill="var(--mute)">' + f.slice(8, 10) + '/' + f.slice(5, 7) + '</text>'; });
+    ejeX(t0, t1, dias, x).forEach(([f, anc]) => { if (o.barras && dias <= 31) anc = 'middle'; s += '<text x="' + x(f) + '" y="' + (H - 6) + '" text-anchor="' + anc + '" font-size="10" fill="var(--mute)">' + f.slice(8, 10) + '/' + f.slice(5, 7) + '</text>'; });
     if (o.mejor) s += '<text x="' + (W - pr) + '" y="' + (pt + 11) + '" text-anchor="end" font-size="11" font-weight="700" fill="var(--ok)">' + o.mejor + '</text>';
     svg.innerHTML = s;
+  }
+  // v0.9: período elegido (7 días por defecto, como pidió Alex). Con 7 días, una fecha por día en el eje.
+  let PER = 7;
+  const ETQ = { 7: 'últimos 7 días', 30: 'últimos 30 días', 90: 'últimos 3 meses', 180: 'últimos 6 meses', 365: 'últimos 12 meses' };
+  function ejeX(t0, t1, dias, x) {
+    if (dias <= 7) { const r = []; for (let t = t0; t <= t1; t += 864e5) r.push([iso(t), 'middle']); r[0][1] = 'start'; r[r.length - 1][1] = 'end'; return dias === 1 ? [[iso(t1), 'end']] : r; }
+    return [[iso(t0), 'start'], [iso((t0 + t1) / 2), 'middle'], [iso(t1), 'end']];
+  }
+  // Semanas de lunes a domingo: media de los días con dato (mínimo 4 por semana, igual que los promedios de 7 días).
+  function semanal(mapa, desdeT, hastaT) {
+    const out = []; let t = desdeT; const dw = (new Date(t).getUTCDay() + 6) % 7; t -= dw * 864e5;
+    for (; t <= hastaT; t += 7 * 864e5) { const v = []; for (let k = 0; k < 7; k++) { const x = mapa[iso(t + k * 864e5)]; if (x != null) v.push(x); } if (v.length >= MIN7) out.push({ f: iso(t + 3 * 864e5), v: media(v), n: v.length, lun: iso(t) }); }
+    return out;
   }
   // Media de los días de calendario [t-b, t-a] con dato; null si hay menos de 4.
   function medDias(mapa, t, a, b) { const v = []; for (let k = a; k <= b; k++) { const x = mapa[iso(t - k * 864e5)]; if (x != null) v.push(x); } return v.length >= MIN7 ? { m: media(v), n: v.length } : null; }
@@ -493,25 +512,25 @@
     const P = {}; datos.forEach((d) => { if (d.peso != null) P[d.fecha] = d.peso; });
     const fs = Object.keys(P).sort(), th = tms(hoy().fecha);
     const pts = fs.map((f) => ({ f, v: P[f], tip: dma(f) + ': ' + fmt(P[f], 1) + ' kg' })), m7 = [];
-    for (let t = th - 29 * 864e5; t <= th; t += 864e5) { const r = medDias(P, t, 0, 6); if (r) m7.push({ f: iso(t), v: r.m, tip: dma(iso(t)) + ': media 7 días ' + fmt(r.m, 2) + ' kg (' + r.n + ' de 7)' }); }
+    for (let t = th - (PER - 1) * 864e5; t <= th; t += 864e5) { const r = medDias(P, t, 0, 6); if (r) m7.push({ f: iso(t), v: r.m, tip: dma(iso(t)) + ': media 7 días ' + fmt(r.m, 2) + ' kg (' + r.n + ' de 7)' }); }
     const obj = perfil.peso_objetivo ? Number(perfil.peso_objetivo) : null;
-    graf($('gPeso'), [{ pts: m7, tipo: 'linea', color: 'var(--peso)', ancho: 2.5 }, { pts, tipo: 'puntos', color: 'var(--peso)', r: 2.4 }], { dec: 1, ref: obj, refTxt: obj ? 'objetivo ' + fmt(obj, 0) + ' kg' : '', vacio: 'Sin pesajes en 30 días', mejor: obj ? '' : '' });
+    graf($('gPeso'), [{ pts: m7, tipo: 'linea', color: 'var(--peso)', ancho: 2.5 }].concat(PER <= 30 ? [{ pts, tipo: 'puntos', color: 'var(--peso)', r: 2.4 }] : []), { dec: 1, ref: obj, refTxt: obj ? 'objetivo ' + fmt(obj, 0) + ' kg' : '', vacio: 'Sin pesajes en el período' });
     const a = medDias(P, th, 0, 6), b = medDias(P, th, 7, 13), u = fs[fs.length - 1];
     $('vPeso').innerHTML = a ? fmt(a.m, 2) + ' kg<small>media de 7 días (' + a.n + ' de 7)</small>' : (u ? fmt(P[u], 1) + ' kg<small>último pesaje ' + dma(u) + '; media de 7 días: datos insuficientes</small>' : '—');
-    let t = 'Puntos: pesaje diario. Línea: media de 7 días (mínimo 4 pesajes; un día sin pesaje no cuenta).';
+    let t = (PER <= 30 ? 'Puntos: pesaje diario. ' : '') + 'Línea: media de 7 días (mínimo 4 pesajes; un día sin pesaje no cuenta).';
     if (a && b) t += ' Semana anterior: ' + fmt(b.m, 2) + ' kg (' + b.n + ' de 7). Cambio: ' + (a.m - b.m >= 0 ? '+' : '−') + fmt(Math.abs(a.m - b.m), 2) + ' kg.';
     if (a && obj) t += ' Te faltan ' + fmt(Math.max(0, a.m - obj), 2) + ' kg para el objetivo de ' + fmt(obj, 0) + ' kg.';
     $('pPeso').textContent = t;
     // Déficit estimado por el peso (misma regla que el Registro v78)
     const dp = []; let ult = null;
-    for (let tt = th - 29 * 864e5; tt <= th; tt += 864e5) { const x1 = medDias(P, tt, 0, 6), x0 = medDias(P, tt, 14, 20); if (!x1 || !x0) continue; const v = (x0.m - x1.m) * 7700 / 14; ult = { tt, v, x1, x0 }; dp.push({ f: iso(tt), v, tip: dma(iso(tt)) + ': ' + (v >= 0 ? 'déficit ' : 'superávit ') + kc(v) + ' kcal/día' }); }
+    for (let tt = th - (PER - 1) * 864e5; tt <= th; tt += 864e5) { const x1 = medDias(P, tt, 0, 6), x0 = medDias(P, tt, 14, 20); if (!x1 || !x0) continue; const v = (x0.m - x1.m) * 7700 / 14; ult = { tt, v, x1, x0 }; dp.push({ f: iso(tt), v, tip: dma(iso(tt)) + ': ' + (v >= 0 ? 'déficit ' : 'superávit ') + kc(v) + ' kcal/día' }); }
     graf($('gDef'), [{ pts: dp, tipo: 'linea', color: 'var(--ok)', ancho: 2.5 }], { cero: true, pad: 50, redondo: true, vacio: 'Hacen falta 3 semanas de pesajes' });
     $('vDef').innerHTML = ult ? (ult.v >= 0 ? '≈ ' + kc(ult.v) : '+' + kc(ult.v)) + ' kcal<small>' + (ult.v >= 0 ? 'déficit por día' : 'comido de más por día') + '</small>' : '—<small>datos insuficientes</small>';
     $('pDef').textContent = ult ? 'Media de los últimos 7 días: ' + fmt(ult.x1.m, 2) + ' kg (' + ult.x1.n + ' de 7). Dos semanas antes: ' + fmt(ult.x0.m, 2) + ' kg (' + ult.x0.n + ' de 7). (' + fmt(ult.x0.m, 2) + ' − ' + fmt(ult.x1.m, 2) + ') × 7.700 ÷ 14 = ' + (ult.v < 0 ? '−' : '') + kc(ult.v) + ' kcal/día. 7.700 kcal por kg es una aproximación: el agua y la sal mueven el peso de un día para otro, por eso se usan medias.' : '(Media de peso de los 7 días que terminan hace 14 días − media de los últimos 7) × 7.700 ÷ 14, cada media con mínimo 4 pesajes. Hacen falta 3 semanas de pesajes.';
   }
   let garDias = [];
   async function cargarGarmin() {
-    const desde = iso(tms(hoy().fecha) - 40 * 864e5);
+    const desde = iso(tms(hoy().fecha) - 372 * 864e5);
     const { data, error } = await sb.from('docs').select('id,data').eq('coleccion', 'garmin').gte('id', desde).order('id', { ascending: true });
     garDias = error || !data ? [] : data.map((r) => r.data).filter((x) => x && x.fecha);
   }
@@ -521,12 +540,14 @@
     const th = tms(hoy().fecha), hm = (h) => Math.floor(h) + ' h ' + p2(Math.round((h % 1) * 60)) + ' min';
     const g = (f) => garDias.find((x) => x.fecha === f) || {};
     const pts = fs.map((f) => ({ f, v: S[f], tip: dma(f) + ': ' + hm(S[f]) + (g(f).sueno_score != null ? ' · puntaje ' + g(f).sueno_score : '') + (g(f).siesta_min ? ' · siesta ' + g(f).siesta_min + ' min' : '') }));
-    graf($('gSue'), [{ pts, tipo: 'barras', color: 'var(--sue)' }], { dias: 14, barras: true, cero: true, dec: 0, ref: 7, refTxt: '7 h', vacio: 'Sin noches en 14 días' });
+    const larga = PER >= 90, ps = larga ? semanal(S, th - (PER - 1) * 864e5, th).map((w) => ({ f: w.f, v: w.v, tip: 'Semana del ' + dma(w.lun) + ': media ' + hm(w.v) + ' por noche (' + w.n + ' de 7)' })) : pts;
+    graf($('gSue'), [{ pts: ps, tipo: 'barras', color: 'var(--sue)' }], { barras: true, paso: larga ? 7 : 1, cero: true, dec: 0, ref: 7, refTxt: '7 h', vacio: 'Sin noches en el período' });
     const u = fs[fs.length - 1], a = medDias(S, th, 0, 6), cortas = Object.entries(S).filter(([f, h]) => tms(f) > th - 7 * 864e5 && h < 6).length;
     $('vSue').innerHTML = hm(S[u]) + '<small>' + (u === hoy().fecha ? 'anoche' : 'noche al ' + dma(u)) + (g(u).sueno_score != null ? ' · puntaje ' + g(u).sueno_score : '') + '</small>';
-    $('pSue').textContent = (a ? 'Media de 7 noches: ' + hm(a.m) + ' (' + a.n + ' de 7). Noches bajo 6 h en la última semana: ' + cortas + '. ' : 'Media de 7 noches: datos insuficientes. ') + 'Horas por noche de Garmin (la fecha es el día en que te despertaste), sin siestas. Línea punteada: 7 h, el mínimo recomendado para adultos (Watson y col. 2015, consenso AASM/SRS).';
+    $('pSue').textContent = (a ? 'Media de 7 noches: ' + hm(a.m) + ' (' + a.n + ' de 7). Noches bajo 6 h en la última semana: ' + cortas + '. ' : 'Media de 7 noches: datos insuficientes. ') + (larga ? 'Barras: media por noche de cada semana de lunes a domingo (mínimo 4 noches). ' : 'Barras: horas por noche de Garmin (la fecha es el día en que te despertaste). ') + 'Sin siestas. Línea punteada: 7 h, el mínimo recomendado para adultos (Watson y col. 2015, consenso AASM/SRS).';
   }
   function pintar() { pintarResultado(); pintarGrafico(); pintarPeso(); pintarSueno(); pintarHist(); }
+  $('per').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-d]'); if (!b) return; PER = +b.dataset.d; $('per').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b)); $('tHrv').textContent = 'HRV, ' + ETQ[PER]; pintarGrafico(); pintarPeso(); pintarSueno(); });
 
   // ---------- Formulario ----------
   const elite = () => perfil.fuente_oficial === 'elite';
