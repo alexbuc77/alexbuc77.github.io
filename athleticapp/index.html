@@ -174,6 +174,7 @@
           <div class="campo"><label for="iRpe">Esfuerzo de ayer (1 a 10)</label><input id="iRpe" type="number" inputmode="numeric" min="1" max="10"></div>
         </div>
         <div class="campo"><label for="iSes">Sesión de ayer</label><input id="iSes" type="text" placeholder="qué corriste ayer"></div>
+        <p class="peq" id="entAviso"></p>
         <div class="campo"><label for="iGym">Gimnasio de ayer</label><input id="iGym" type="text" placeholder="qué hiciste en el gimnasio"></div>
         <div class="campo"><label for="iNota">Nota</label><input id="iNota" type="text" placeholder="sueño, alcohol, síntomas…"></div>
         <button class="pri" type="submit" id="bGuardar" style="width:100%">Guardar lectura</button>
@@ -200,7 +201,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Athleticapp · versión 0.6 · 15-11-2026</p>
+  <p class="pie" id="version">Athleticapp · versión 0.7 · 16-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -209,7 +210,7 @@
   // Clave pública de Supabase: está pensada para ir en el navegador; los datos los protege RLS por usuario.
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.6'; const CONS_VER = 3;
+  const VER = '0.7'; const CONS_VER = 3;
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
   let actx = null;
   function campana(fin) {
@@ -267,6 +268,7 @@
     prepararForm();
     await cargarDatos();
     await prellenarCaptura();
+    await prellenarEntreno();
     await estadoGarmin();
   }
 
@@ -449,7 +451,7 @@
     $('fAviso').textContent = 'Editando la lectura del ' + dma(f) + '.'; $('fAviso').className = 'aviso';
     $('fLect').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  function finEdicion() { editando = null; $('bGuardar').textContent = 'Guardar lectura'; show('bCancelarEd', false); ['iHrv', 'iPeso', 'iMin', 'iProm', 'iMax', 'iMinEnt', 'iRpe', 'iSes', 'iGym', 'iNota'].forEach((i) => $(i).value = ''); prepararForm(); prellenarCaptura(); }
+  function finEdicion() { editando = null; $('bGuardar').textContent = 'Guardar lectura'; show('bCancelarEd', false); ['iHrv', 'iPeso', 'iMin', 'iProm', 'iMax', 'iMinEnt', 'iRpe', 'iSes', 'iGym', 'iNota'].forEach((i) => $(i).value = ''); prepararForm(); prellenarCaptura(); prellenarEntreno(); }
   // Toma del día hecha con la app Captura RR (llega a captura_rr por la función captura-rr): completa el formulario como en el Registro v74.
   const corr = () => Number(perfil.cap_corr) || 0;
   async function prellenarCaptura() {
@@ -459,6 +461,27 @@
     const c = data.map((r) => r.data).find((x) => x && x.valida && x.fecha === f && (x.hora || '') < '11:00'); if (!c) return;
     llenarDesdeToma(c.fecha, c.hora, c.score, c.fc_min, c.fc_med, c.fc_max, c.art);
     ultimaToma = { fecha: c.fecha, score: c.score, rmssd: c.rmssd, art: c.art, id: c.fecha + 'T' + (c.hora || '').replace(':', '-') };
+  }
+  // v0.7: entreno de ayer desde Garmin. Lee las sesiones de carrera del usuario en garmin_act (las sube la sincronización
+  // de Garmin de cada usuario; hoy solo existe la de Alex desde su PC). Completa minutos, esfuerzo y sesión; no pisa lo escrito.
+  const segHms = (t) => { t = Math.round(t); const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = t % 60; return (h ? h + ':' + p2(m) : m) + ':' + p2(x); };
+  async function prellenarEntreno() {
+    if (editando) return;
+    const f = $('iFecha').value || hoy().fecha, d = new Date(f + 'T12:00:00'); d.setDate(d.getDate() - 1);
+    const ayer = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+    if (datos.some((x) => x.fecha === f)) return;
+    const { data, error } = await sb.from('docs').select('id,data').eq('coleccion', 'garmin_act').eq('data->>fecha', ayer);
+    if (error || !data || !data.length) { $('entAviso').textContent = ''; return; }
+    const ses = data.map((r) => r.data).filter((x) => x && x.dur_s > 0).sort((a, b) => String(a.inicio || a.id || '').localeCompare(String(b.inicio || b.id || '')));
+    if (!ses.length) return;
+    const seg = ses.reduce((a, x) => a + x.dur_s, 0), conR = ses.filter((x) => x.rpe != null);
+    const rpe = conR.length === ses.length ? conR.reduce((a, x) => a + x.dur_s * x.rpe, 0) / seg / 10 : null;
+    const txt = ses.map((x) => { const n = String(x.nombre || 'Carrera').replace(/^Ciudad de Buenos Aires\s*[-–]?\s*/, '').replace(/\s*\([^)]*$/, '').trim() || 'Carrera'; const km = (x.dist_m || 0) / 1000;
+      return n + (km ? ' · ' + fmt(km, 2) + ' km en ' + segHms(x.dur_s) + ' (' + segHms(x.dur_s / km).replace(/^0:/, '') + '/km)' : ' · ' + segHms(x.dur_s)); }).join(' + ');
+    if (!$('iMinEnt').value) $('iMinEnt').value = Math.round(seg / 60);
+    if (!$('iRpe').value && rpe != null) $('iRpe').value = Math.max(1, Math.min(10, Math.round(rpe)));
+    if (!$('iSes').value) $('iSes').value = txt;
+    $('entAviso').textContent = 'Entreno del ' + dma(ayer) + ' traído de Garmin (' + ses.length + (ses.length === 1 ? ' sesión' : ' sesiones') + '). El esfuerzo es el que marcaste en el reloj' + (rpe == null ? '; en alguna sesión no está cargado: completalo' : '') + '. Revisalo y corregí si hace falta.';
   }
   function llenarDesdeToma(fecha, hora, score, mn, pr, mx, art) {
     const hrv = Math.round(score + corr());
@@ -479,7 +502,7 @@
     if (editando && prev) { d.guardado = prev.guardado || d.guardado; d.editado = new Date().toISOString(); }
     if (prev) Object.keys(prev).forEach((k) => { if (d[k] == null && prev[k] != null && !(editando && ['hrv','peso','hr_min','hr_prom','hr_max','carga_min','carga_rpe','sesion','gym','nota'].includes(k))) d[k] = prev[k]; });
     Object.keys(d).forEach((k) => d[k] == null && delete d[k]);
-    if (await guardarDoc('lecturas', fecha, d)) { const fueEd = !!editando; finEdicion(); $('fAviso').textContent = fueEd ? 'Cambios guardados.' : 'Guardada.'; $('fAviso').className = 'aviso ok'; await cargarDatos(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (await guardarDoc('lecturas', fecha, d)) { const fueEd = !!editando; await cargarDatos(); finEdicion(); $('fAviso').textContent = fueEd ? 'Cambios guardados.' : 'Guardada.'; $('fAviso').className = 'aviso ok'; window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
 
   // ---------- Medición con la banda (misma corrección que Captura RR v0.4) ----------
