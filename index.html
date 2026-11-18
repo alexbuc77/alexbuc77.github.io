@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-v5-192.png">
 <link rel="apple-touch-icon" href="icon-v5-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
-<!-- Restbeat (antes Athleticapp) · versión 0.30 · 18-11-2026 · v0.30: registro sin invitación (mail, contraseña con requisitos, 18 años o más, confirmación por mail); v0.29: pantalla Registrarse con requisitos de contraseña que se tildan en verde; Entrar / Log in; v0.28: el audio de la voz se pide al terminar la toma y suena al tocar Guardar; v0.27: política de privacidad del 18-11-2026 (voz de Google) y consentimiento v4; v0.26: voz de Gemini (es-ES commercial-3, en-GB concierge-2) con la del teléfono como respaldo; se activa con el consentimiento v4; v0.25: voz con tono y velocidad naturales, frase por frase, y elección de la voz de mejor calidad del teléfono; v0.24: voz que lee el resultado al guardar una lectura con HRV, con botón para silenciar; v0.23: postura recomendada sentado, con fuente; v0.22: indicación de postura (acostado o sentado, siempre igual); v0.21: Conectar Garmin desactivado hasta la aprobación de Garmin; v0.20: Garmin con la etiqueta PRUEBA EN BETA; v0.19: Leer más trae tomas del servidor sin límite; v0.18: historial con 7 tomas y botón Leer más; v0.17: tomas sin conexión guardadas en el teléfono y enviadas al volver internet; historial de tomas con descarga de intervalos RR en CSV y Excel; v0.16: medición con la banda igual que Captura RR (HRV en vivo, FC mínima, media y máxima, intervalos RR, duración a elegir y resultado completo); v0.15: ícono con el círculo al 80 % visible en Android y mensajes sin datos técnicos; v0.14: botón para ver la contraseña e ícono con círculo al 75 %; v0.13: nombre Restbeat y app en la raíz del sitio; v0.4: campana y voz al empezar y terminar la toma; v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
+<!-- Restbeat (antes Athleticapp) · versión 0.31 · 18-11-2026 · v0.31: Cloudflare Turnstile en entrar, registrarse y recuperar contraseña; v0.30: registro sin invitación (mail, contraseña con requisitos, 18 años o más, confirmación por mail); v0.29: pantalla Registrarse con requisitos de contraseña que se tildan en verde; Entrar / Log in; v0.28: el audio de la voz se pide al terminar la toma y suena al tocar Guardar; v0.27: política de privacidad del 18-11-2026 (voz de Google) y consentimiento v4; v0.26: voz de Gemini (es-ES commercial-3, en-GB concierge-2) con la del teléfono como respaldo; se activa con el consentimiento v4; v0.25: voz con tono y velocidad naturales, frase por frase, y elección de la voz de mejor calidad del teléfono; v0.24: voz que lee el resultado al guardar una lectura con HRV, con botón para silenciar; v0.23: postura recomendada sentado, con fuente; v0.22: indicación de postura (acostado o sentado, siempre igual); v0.21: Conectar Garmin desactivado hasta la aprobación de Garmin; v0.20: Garmin con la etiqueta PRUEBA EN BETA; v0.19: Leer más trae tomas del servidor sin límite; v0.18: historial con 7 tomas y botón Leer más; v0.17: tomas sin conexión guardadas en el teléfono y enviadas al volver internet; historial de tomas con descarga de intervalos RR en CSV y Excel; v0.16: medición con la banda igual que Captura RR (HRV en vivo, FC mínima, media y máxima, intervalos RR, duración a elegir y resultado completo); v0.15: ícono con el círculo al 80 % visible en Android y mensajes sin datos técnicos; v0.14: botón para ver la contraseña e ícono con círculo al 75 %; v0.13: nombre Restbeat y app en la raíz del sitio; v0.4: campana y voz al empezar y terminar la toma; v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
 <style>
   :root {
     --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
@@ -53,6 +53,7 @@
   .pwd > button.ojo { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: auto; padding: 8px; border: 0; background: none; color: var(--mute); line-height: 0; }
   .pwd > button.ojo svg { width: 22px; height: 22px; }
   /* v0.29: requisitos de la contraseña que se tildan en verde */
+  .cap:empty { display: none; } .cap { margin: 0 0 10px; }
   .req { list-style: none; padding: 0; margin: 6px 0 12px; font-size: 13px; }
   .req li { color: var(--mute); margin: 3px 0; }
   .req li::before { content: '○'; display: inline-block; width: 18px; }
@@ -145,6 +146,7 @@
     <form id="fLogin">
       <div class="campo"><label for="lMail">Mail</label><input id="lMail" type="email" autocomplete="email" required></div>
       <div class="campo"><label for="lPass">Contraseña</label><input id="lPass" type="password" autocomplete="current-password" required></div>
+      <div id="lCap" class="cap"></div>
       <button class="pri" type="submit" style="width:100%">Entrar</button>
     </form>
     <button type="button" id="bOlvido" style="width:100%;margin-top:8px">Olvidé mi contraseña</button>
@@ -167,6 +169,7 @@
       <div class="campo"><label for="rPass2">Repetila</label><input id="rPass2" type="password" autocomplete="new-password" required></div>
       <ul class="req" id="rReq2" aria-live="polite"><li data-r="igual">Las dos contraseñas coinciden</li></ul>
       <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--ink);margin:4px 0 12px"><input id="rEdad" type="checkbox" style="width:auto;margin-top:2px"> Tengo 18 años o más.</label>
+      <div id="rCap" class="cap"></div>
       <button class="pri" type="submit" id="rBtn" style="width:100%">Registrarse</button>
     </form>
     <p class="aviso" id="rAviso"></p>
@@ -348,7 +351,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Restbeat · versión 0.30 · 18-11-2026</p>
+  <p class="pie" id="version">Restbeat · versión 0.31 · 18-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -381,7 +384,7 @@
   if (LANG === 'en') { const ve = document.getElementById('version'); ve.textContent = ve.textContent.replace('versión', 'version'); }
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.30';
+  const VER = '0.31';
   const CONS_VER = 4;
   const GARMIN_API_ACTIVA = false; // pasar a true el día que Garmin apruebe el acceso (ver claude/app-propia-arquitectura.md)
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
@@ -501,11 +504,27 @@
     catch (e) { $('gAviso').textContent = tr('No se pudo desconectar: ') + e.message; $('gAviso').className = 'aviso mal'; }
     $('gDes').disabled = false; await estadoGarmin();
   });
+  // v0.31: Cloudflare Turnstile contra robots en entrar, registrarse y olvidé mi contraseña.
+  // Supabase exige el token cuando la protección CAPTCHA está prendida. Solo aparece un desafío si Cloudflare duda.
+  const TS_SITE = '';
+  const tsTok = {}, tsId = {};
+  (function tsCargar() {
+    if (!TS_SITE || !navigator.onLine) return;
+    const sc = document.createElement('script'); sc.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; sc.async = true;
+    sc.onload = () => ['lCap', 'rCap'].forEach((id) => { try { tsId[id] = turnstile.render('#' + id, { sitekey: TS_SITE, appearance: 'interaction-only', size: 'flexible', language: LANG === 'en' ? 'en' : 'es', callback: (t) => { tsTok[id] = t; }, 'expired-callback': () => { tsTok[id] = null; }, 'error-callback': () => { tsTok[id] = null; } }); } catch (_) {} });
+    document.head.appendChild(sc);
+  })();
+  async function tsToken(id) {
+    if (!TS_SITE) return undefined;
+    for (let i = 0; i < 40 && !tsTok[id]; i++) await new Promise((r) => setTimeout(r, 250));
+    const t = tsTok[id]; tsTok[id] = null; try { turnstile.reset(tsId[id]); } catch (_) {}
+    return t || undefined;
+  }
   const ocultarTodo = () => ['vLogin', 'vReg', 'vAlta', 'vCod', 'vCons', 'vApp', 'vClave'].forEach((v) => show(v, false));
   function pantallaLogin() { usuario = null; $('quien').textContent = ''; show('bSalir', false); ocultarTodo(); show('vLogin', true); }
   $('fLogin').addEventListener('submit', async (e) => {
     e.preventDefault(); $('lAviso').textContent = tr('Entrando…'); $('lAviso').className = 'aviso';
-    const { error } = await sb.auth.signInWithPassword({ email: $('lMail').value.trim(), password: $('lPass').value });
+    const { error } = await sb.auth.signInWithPassword({ email: $('lMail').value.trim(), password: $('lPass').value, options: { captchaToken: await tsToken('lCap') } });
     if (error) { $('lAviso').textContent = tr('No se pudo entrar: revisá el mail y la contraseña.'); $('lAviso').className = 'aviso mal'; return; }
     $('lPass').value = ''; arrancar();
   });
@@ -518,7 +537,7 @@
   $('bOlvido').addEventListener('click', async () => {
     const m = $('lMail').value.trim();
     if (!m) { $('lAviso').textContent = tr('Escribí tu mail arriba y tocá de nuevo.'); $('lAviso').className = 'aviso mal'; return; }
-    await sb.auth.resetPasswordForEmail(m, { redirectTo: location.origin + location.pathname });
+    await sb.auth.resetPasswordForEmail(m, { redirectTo: location.origin + location.pathname, captchaToken: await tsToken('lCap') });
     // Mismo mensaje exista o no la cuenta: no se revela qué mails están registrados.
     $('lAviso').textContent = tr('Si ese mail tiene cuenta, te llegó un link para elegir una contraseña nueva. Abrilo en este celular.'); $('lAviso').className = 'aviso ok';
   });
@@ -548,7 +567,7 @@
     if (p1 !== p2) { av.textContent = tr('Las dos contraseñas no coinciden.'); av.className = 'aviso mal'; return; }
     if (!$('rEdad').checked) { av.textContent = tr('Para usar Restbeat tenés que tener 18 años o más.'); av.className = 'aviso mal'; return; }
     av.textContent = tr('Creando la cuenta…'); av.className = 'aviso'; $('rBtn').disabled = true;
-    const { error } = await sb.auth.signUp({ email: m, password: p1, options: { emailRedirectTo: location.origin + '/', data: { idioma: LANG, mayor_de_18: true } } });
+    const { error } = await sb.auth.signUp({ email: m, password: p1, options: { emailRedirectTo: location.origin + '/', captchaToken: await tsToken('rCap'), data: { idioma: LANG, mayor_de_18: true } } });
     $('rBtn').disabled = false;
     if (error) {
       const msg = /signups? not allowed|disabled/i.test(error.message || '') ? tr('El registro todavía no está abierto.') : /password/i.test(error.message || '') ? tr('La contraseña no fue aceptada. Probá con otra más larga o menos común.') : tr('No se pudo crear la cuenta. Probá de nuevo en unos minutos.');
