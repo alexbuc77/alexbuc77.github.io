@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-v5-192.png">
 <link rel="apple-touch-icon" href="icon-v5-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
-<!-- Restbeat (antes Athleticapp) · versión 0.31 · 18-11-2026 · v0.31: Cloudflare Turnstile en entrar, registrarse y recuperar contraseña; v0.30: registro sin invitación (mail, contraseña con requisitos, 18 años o más, confirmación por mail); v0.29: pantalla Registrarse con requisitos de contraseña que se tildan en verde; Entrar / Log in; v0.28: el audio de la voz se pide al terminar la toma y suena al tocar Guardar; v0.27: política de privacidad del 18-11-2026 (voz de Google) y consentimiento v4; v0.26: voz de Gemini (es-ES commercial-3, en-GB concierge-2) con la del teléfono como respaldo; se activa con el consentimiento v4; v0.25: voz con tono y velocidad naturales, frase por frase, y elección de la voz de mejor calidad del teléfono; v0.24: voz que lee el resultado al guardar una lectura con HRV, con botón para silenciar; v0.23: postura recomendada sentado, con fuente; v0.22: indicación de postura (acostado o sentado, siempre igual); v0.21: Conectar Garmin desactivado hasta la aprobación de Garmin; v0.20: Garmin con la etiqueta PRUEBA EN BETA; v0.19: Leer más trae tomas del servidor sin límite; v0.18: historial con 7 tomas y botón Leer más; v0.17: tomas sin conexión guardadas en el teléfono y enviadas al volver internet; historial de tomas con descarga de intervalos RR en CSV y Excel; v0.16: medición con la banda igual que Captura RR (HRV en vivo, FC mínima, media y máxima, intervalos RR, duración a elegir y resultado completo); v0.15: ícono con el círculo al 80 % visible en Android y mensajes sin datos técnicos; v0.14: botón para ver la contraseña e ícono con círculo al 75 %; v0.13: nombre Restbeat y app en la raíz del sitio; v0.4: campana y voz al empezar y terminar la toma; v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
+<!-- Restbeat (antes Athleticapp) · versión 0.32 · 18-11-2026 · v0.32: clave de sitio de Turnstile cargada; v0.31: Cloudflare Turnstile en entrar, registrarse y recuperar contraseña; v0.30: registro sin invitación (mail, contraseña con requisitos, 18 años o más, confirmación por mail); v0.29: pantalla Registrarse con requisitos de contraseña que se tildan en verde; Entrar / Log in; v0.28: el audio de la voz se pide al terminar la toma y suena al tocar Guardar; v0.27: política de privacidad del 18-11-2026 (voz de Google) y consentimiento v4; v0.26: voz de Gemini (es-ES commercial-3, en-GB concierge-2) con la del teléfono como respaldo; se activa con el consentimiento v4; v0.25: voz con tono y velocidad naturales, frase por frase, y elección de la voz de mejor calidad del teléfono; v0.24: voz que lee el resultado al guardar una lectura con HRV, con botón para silenciar; v0.23: postura recomendada sentado, con fuente; v0.22: indicación de postura (acostado o sentado, siempre igual); v0.21: Conectar Garmin desactivado hasta la aprobación de Garmin; v0.20: Garmin con la etiqueta PRUEBA EN BETA; v0.19: Leer más trae tomas del servidor sin límite; v0.18: historial con 7 tomas y botón Leer más; v0.17: tomas sin conexión guardadas en el teléfono y enviadas al volver internet; historial de tomas con descarga de intervalos RR en CSV y Excel; v0.16: medición con la banda igual que Captura RR (HRV en vivo, FC mínima, media y máxima, intervalos RR, duración a elegir y resultado completo); v0.15: ícono con el círculo al 80 % visible en Android y mensajes sin datos técnicos; v0.14: botón para ver la contraseña e ícono con círculo al 75 %; v0.13: nombre Restbeat y app en la raíz del sitio; v0.4: campana y voz al empezar y terminar la toma; v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
 <style>
   :root {
     --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
@@ -351,7 +351,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Restbeat · versión 0.31 · 18-11-2026</p>
+  <p class="pie" id="version">Restbeat · versión 0.32 · 18-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -384,7 +384,7 @@
   if (LANG === 'en') { const ve = document.getElementById('version'); ve.textContent = ve.textContent.replace('versión', 'version'); }
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.31';
+  const VER = '0.32';
   const CONS_VER = 4;
   const GARMIN_API_ACTIVA = false; // pasar a true el día que Garmin apruebe el acceso (ver claude/app-propia-arquitectura.md)
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
@@ -506,7 +506,7 @@
   });
   // v0.31: Cloudflare Turnstile contra robots en entrar, registrarse y olvidé mi contraseña.
   // Supabase exige el token cuando la protección CAPTCHA está prendida. Solo aparece un desafío si Cloudflare duda.
-  const TS_SITE = '';
+  const TS_SITE = '0x4AAAAAAGHI9NLqFn3qOxxh';
   const tsTok = {}, tsId = {};
   (function tsCargar() {
     if (!TS_SITE || !navigator.onLine) return;
