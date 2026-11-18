@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-v5-192.png">
 <link rel="apple-touch-icon" href="icon-v5-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
-<!-- Restbeat (antes Athleticapp) · versión 0.27 · 18-11-2026 · v0.27: política de privacidad del 18-11-2026 (voz de Google) y consentimiento v4; v0.26: voz de Gemini (es-ES commercial-3, en-GB concierge-2) con la del teléfono como respaldo; se activa con el consentimiento v4; v0.25: voz con tono y velocidad naturales, frase por frase, y elección de la voz de mejor calidad del teléfono; v0.24: voz que lee el resultado al guardar una lectura con HRV, con botón para silenciar; v0.23: postura recomendada sentado, con fuente; v0.22: indicación de postura (acostado o sentado, siempre igual); v0.21: Conectar Garmin desactivado hasta la aprobación de Garmin; v0.20: Garmin con la etiqueta PRUEBA EN BETA; v0.19: Leer más trae tomas del servidor sin límite; v0.18: historial con 7 tomas y botón Leer más; v0.17: tomas sin conexión guardadas en el teléfono y enviadas al volver internet; historial de tomas con descarga de intervalos RR en CSV y Excel; v0.16: medición con la banda igual que Captura RR (HRV en vivo, FC mínima, media y máxima, intervalos RR, duración a elegir y resultado completo); v0.15: ícono con el círculo al 80 % visible en Android y mensajes sin datos técnicos; v0.14: botón para ver la contraseña e ícono con círculo al 75 %; v0.13: nombre Restbeat y app en la raíz del sitio; v0.4: campana y voz al empezar y terminar la toma; v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
+<!-- Restbeat (antes Athleticapp) · versión 0.28 · 18-11-2026 · v0.28: el audio de la voz se pide al terminar la toma y suena al tocar Guardar; v0.27: política de privacidad del 18-11-2026 (voz de Google) y consentimiento v4; v0.26: voz de Gemini (es-ES commercial-3, en-GB concierge-2) con la del teléfono como respaldo; se activa con el consentimiento v4; v0.25: voz con tono y velocidad naturales, frase por frase, y elección de la voz de mejor calidad del teléfono; v0.24: voz que lee el resultado al guardar una lectura con HRV, con botón para silenciar; v0.23: postura recomendada sentado, con fuente; v0.22: indicación de postura (acostado o sentado, siempre igual); v0.21: Conectar Garmin desactivado hasta la aprobación de Garmin; v0.20: Garmin con la etiqueta PRUEBA EN BETA; v0.19: Leer más trae tomas del servidor sin límite; v0.18: historial con 7 tomas y botón Leer más; v0.17: tomas sin conexión guardadas en el teléfono y enviadas al volver internet; historial de tomas con descarga de intervalos RR en CSV y Excel; v0.16: medición con la banda igual que Captura RR (HRV en vivo, FC mínima, media y máxima, intervalos RR, duración a elegir y resultado completo); v0.15: ícono con el círculo al 80 % visible en Android y mensajes sin datos técnicos; v0.14: botón para ver la contraseña e ícono con círculo al 75 %; v0.13: nombre Restbeat y app en la raíz del sitio; v0.4: campana y voz al empezar y terminar la toma; v0.3: conexión con la API oficial de Garmin (OAuth 2.0); v0.2: doble factor obligatorio (TOTP); v0.1: sesión, medición con banda, semáforo y lectura manual -->
 <style>
   :root {
     --ground: #e6e8e2; --card: #fbfbf9; --ink: #1b2320; --mute: #646c65; --line: #ccd0c8; --field: #ffffff;
@@ -313,7 +313,7 @@
       <div id="hist"></div>
     </section>
   </div>
-  <p class="pie" id="version">Restbeat · versión 0.27 · 18-11-2026</p>
+  <p class="pie" id="version">Restbeat · versión 0.28 · 18-11-2026</p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -346,7 +346,7 @@
   if (LANG === 'en') { const ve = document.getElementById('version'); ve.textContent = ve.textContent.replace('versión', 'version'); }
   const SB_URL = 'https://ezwxdwgjutdsewxeqlsp.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6d3hkd2dqdXRkc2V3eGVxbHNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0OTU0NTUsImV4cCI6MjEwNzA3MTQ1NX0.dRKaqreAI9kMMv1jBdSTHKuhiMkhzxGOXsP0ocF8HJQ';
-  const VER = '0.27';
+  const VER = '0.28';
   const CONS_VER = 4;
   const GARMIN_API_ACTIVA = false; // pasar a true el día que Garmin apruebe el acceso (ver claude/app-propia-arquitectura.md)
   // Aviso sonoro: campana (Web Audio) y voz en inglés al empezar y al terminar la toma
@@ -830,13 +830,27 @@
     };
     if (speechSynthesis.getVoices().length) hablar(); else speechSynthesis.addEventListener('voiceschanged', hablar, { once: true });
   }
+  // v0.28: al terminar una toma válida se pide el audio con el estado que va a quedar al guardar; al tocar Guardar
+  // se reproduce ese audio si el texto coincide (si cambiaste algún dato, se pide de nuevo).
+  let vozPrevia = null;
+  function estadoProvisorio() {
+    const f = $('iFecha').value, hrv = num('iHrv'); if (!f || hrv == null) return null;
+    const nueva = { ...(datos.find((x) => x.fecha === f) || {}), fecha: f, hrv };
+    [['hr_min', 'iMin'], ['carga_min', 'iMinEnt'], ['carga_rpe', 'iRpe']].forEach(([k, id]) => { const v = num(id); if (v != null) nueva[k] = v; });
+    const antes = datos;
+    datos = datos.filter((x) => x.fecha !== f).concat([nueva]).sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    try { const i = datos.length - 1; return datos[i].fecha === f ? estado(i) : null; } finally { datos = antes; }
+  }
+  function prepararVoz() {
+    try { if (!vozOn()) return; const e = estadoProvisorio(); if (!e || e.sin) return; const texto = locucion(e); vozPrevia = { texto, prom: audioGemini(texto) }; } catch (_) { vozPrevia = null; }
+  }
   function callarVoz() { try { if (audioVoz) audioVoz.pause(); speechSynthesis.cancel(); } catch (_) {} }
   async function leerResultado() {
     try {
       if (!vozOn() || !datos.length) return;
       const e = estado(datos.length - 1); if (e.sin) return;
       const texto = locucion(e); callarVoz();
-      const blob = await audioGemini(texto);
+      const blob = vozPrevia && vozPrevia.texto === texto ? await vozPrevia.prom : await audioGemini(texto); vozPrevia = null;
       if (!vozOn()) return; // si la silenciaron mientras se generaba
       if (blob) {
         const url = URL.createObjectURL(blob); audioVoz = new Audio(url); audioVoz.onended = () => URL.revokeObjectURL(url);
@@ -926,7 +940,7 @@
     if (a.valida) {
       ultimaToma = { fecha, ...a };
       ultimaToma.id = fecha + 'T' + hora.replace(':', '-');
-      if (!elite() && !editando) llenarDesdeToma(fecha, hora, a.score, a.hrMin, a.hrProm, a.hrMax, a.art);
+      if (!elite() && !editando) { llenarDesdeToma(fecha, hora, a.score, a.hrMin, a.hrProm, a.hrMax, a.art); if (a.valida) prepararVoz(); }
     }
   }
 
